@@ -43,7 +43,6 @@ if __name__ == '__main__':
     if option == '--example':
         indri_query, query_terms = generate_indri_query("[ (NE, ['Mexican', 'Food']), (Non-NE, ['little', 'wonder']), (None, ['strong']) ]", 50, 20)
         f = generate_param_file('../data/index', indri_query, 3)
-        print f.name
         subprocess.call(['cpp/Search', f.name])
         f.close()
     elif option == '--search':
