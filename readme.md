@@ -7,7 +7,7 @@
 
 # query.py
 * command
-    * python query.py --search <index-path> <search-exe-file> <query-str> <passage-length> <passage-step> <result-num>
+    * python query.py --search index-path search-exe-file query-str passage-length passage-step result-num
 * output
     1. index info
     2. query info
