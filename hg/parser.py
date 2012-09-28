@@ -249,7 +249,7 @@ def mix_brackets(brackets, ne):
     return remove_numbering(nbr)      
     
 def parse_query(query):
-    tok = nltk.word_tokenize(sent)
+    tok = nltk.word_tokenize(query)
     brackets = sexpr_to_brackets(parse_sexpr(cclparse(" ".join(tok))))
     named_entities = ne(tok)
 
