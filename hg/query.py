@@ -3,7 +3,7 @@ import sys
 import subprocess
 import tempfile
 
-from parser import parse_query
+from parser import parse_into_chunks as parse_query
 
 def str_to_parsed_query(query):
     phrases = re.findall('\(.+?\)', query)
@@ -37,15 +37,14 @@ def generate_indri_query(query, passage_len, passage_inc):
     indri_query = '#combine[passage%d:%d](%s)' % (int(passage_len), int(passage_inc), ' '.join(sub_queries))
     return indri_query, query_terms
 
-def generate_param_file(index_path, query, res_num):
+def generate_param_file(index_path, query, res_num, query_terms):
     f = tempfile.NamedTemporaryFile()
     f.write(index_path + '\n')
-    f.write(indri_query + '\n')
+    f.write(query + '\n')
     f.write(str(res_num) + '\n')
     for query_term in query_terms:
         f.write(query_term + '\n')
     f.flush()
-    print f.name
     return f
 
 if __name__ == '__main__':
@@ -53,8 +52,7 @@ if __name__ == '__main__':
     argv = sys.argv[2:]
     if option == '--example':
         indri_query, query_terms = generate_indri_query(str_to_parsed_query("[ (NE, ['Mexican', 'Food']), (Non-NE, ['little', 'wonder']), (None, ['strong']) ]"), 50, 20)
-        f = generate_param_file('../data/index', indri_query, 3)
-        subprocess.call(['/bin/cat', f.name])
+        f = generate_param_file('../data/index', indri_query, 3, query_terms)
         subprocess.call(['cpp/Search', f.name])
         f.close()
     elif option == '--search' or option == '--search-with-parsed-query':
@@ -64,7 +62,7 @@ if __name__ == '__main__':
         else:
             query = str_to_parsed_query(query_or_parsed)
         indri_query, query_terms = generate_indri_query(query, passage_len, passage_inc)
-        f = generate_param_file(index_path, indri_query, res_num)
+        f = generate_param_file(index_path, indri_query, res_num, query_terms)
         subprocess.call(['%s' % search_file, f.name])
         f.close()
         
