@@ -23,7 +23,7 @@ def extract_para(node, f):
             if c.name in inline_tags:
                 pass
             else:
-                f.write(u'\n')
+                f.write(u' . \n')
             if not (c.name == 'script' or c.name == 'style'):
                 f.write(u' ')
                 for cc in reversed(c.contents):

@@ -12,7 +12,7 @@ from html_to_trec import detag_html_file
 
 def do_search(query, search_command, path_to_index, num_passages):
     
-    indri_query, query_terms = generate_indri_query(query, 50, 20)
+    indri_query, query_terms = generate_indri_query(query,120, 50)
     f = generate_param_file(path_to_index, indri_query, num_passages, query_terms)
     
     cmd = 'cpp/Search %s' % (f.name)
@@ -62,7 +62,14 @@ def identify_candidates(passages):
     potential_candidates = dict()
 
     # parse all passages
+    seen_documents = set()
+    print len(passages)
     for idx in xrange(0, len(passages)):
+        if int(passages[idx][0]['document'])> 20:
+            continue
+        if passages[idx][0]['document'] in seen_documents:
+            continue
+        seen_documents.add(passages[idx][0]['document'])
         chunks = parse_into_chunks(passages[idx][1])
         passage_counted = set()
         for chunk in chunks:
@@ -81,13 +88,14 @@ def identify_candidates(passages):
                 passage_counted.add(as_str)
 
             potential_candidates[as_str] = info
+        print '=== passag>', re.sub('\s+', ' ', passages[idx][1]), 'candidates:', passage_counted
 
     # keep all NEs plus "important" Non-NEs (might need corpus frequencies for that)
     result_candidates = []
     result_evidence = dict()
     for potential in potential_candidates:
         entry = potential_candidates[potential]
-        if entry['type'] == 'NE' or entry['passage_count'] > entry['total_count'] * 0.8:
+        if True: # entry['type'] == 'NE' or entry['passage_count'] > entry['total_count'] * 0.8:
             # print entry['type'], potential
             result_candidates.append( (potential, entry['tokens']) )
             result_evidence[potential] = \
