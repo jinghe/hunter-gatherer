@@ -2,6 +2,7 @@ import sys
 import os
 import re
 import subprocess
+import nltk
 
 from subprocess import Popen, PIPE, STDOUT
 from operator import itemgetter
@@ -60,10 +61,11 @@ def do_search(query, search_command, path_to_index, num_passages):
 
 def identify_candidates(passages):
     potential_candidates = dict()
+    stopwords = nltk.corpus.stopwords.words('english')
 
     # parse all passages
     seen_documents = set()
-    print len(passages)
+    #print len(passages)
     for idx in xrange(0, len(passages)):
         if int(passages[idx][0]['document'])> 20:
             continue
@@ -75,6 +77,10 @@ def identify_candidates(passages):
         for chunk in chunks:
             chunk = (chunk[0], map(lambda x: re.sub('[^a-z0-9]',' ', x).strip(), chunk[1]))
             as_str = " ".join(chunk[1]).strip()
+
+            if as_str in stopwords:
+                continue
+            
             info = potential_candidates.get(as_str, dict())
             info['tokens'] = chunk[1]
             info['type'] = 'NE' if info.get('type', 'Non-NE') == 'NE' else chunk[0] # once NE, always NE
@@ -88,7 +94,7 @@ def identify_candidates(passages):
                 passage_counted.add(as_str)
 
             potential_candidates[as_str] = info
-        print '=== passag>', re.sub('\s+', ' ', passages[idx][1]), 'candidates:', passage_counted
+        # print '=== passage =>', re.sub('\s+', ' ', passages[idx][1]), '|=== candidates =>', passage_counted
 
     # keep all NEs plus "important" Non-NEs (might need corpus frequencies for that)
     result_candidates = []
@@ -115,31 +121,10 @@ def score_candidate(candidate, evidence, main_evidence, query):
         score_line = entry[0]
         score += 100.0 + score_line['score']
 
-    return score * (10.0 if main_evidence.get('type', 'Non-NE') == 'NE' else 1.0)
+    return score * (1.0 if main_evidence.get('type', 'Non-NE') == 'NE' else 1.0)
 
 
-if __name__ == '__main__':
-    ####
-    # input: ini file, file containing the list of HTML documents and query
-    #
-    ini_file = sys.argv[1]
-    htmls_file = sys.argv[2]
-    query_str = " ".join(sys.argv[3:])
-
-    ini = dict()
-    for line in file(ini_file):
-        if line[0] != '#':
-            parts = line.split('=',1)
-            ini[parts[0].strip()] = parts[1].strip()
-
-    htmls = []
-    html_urls = []
-    for line in file(htmls_file):
-        line = line.strip()
-        parts = line.split('\t')
-        htmls.append(parts[0])
-        html_urls.append(parts[1] if len(parts) > 1 else parts[0])
-
+def find_nuggets(ini, htmls, query_str):
     tmp_folder = ini.get('tmp_folder', './tmp')
 
     ####
@@ -215,7 +200,45 @@ if __name__ == '__main__':
                                                    main_evidence[candidate],
                                                    parsed_query),
                                    evidence[candidate]) )
+    ####
+    # clean up
+    #
+    for i in xrange(0, html_count):
+        try:
+            os.unlink("%s/to_index/%s.txt" % (tmp_folder, i))
+        except:
+            pass
 
+    return (scored_candidates, parsed_query, path_to_index)
+
+def load_ini(ini_file):
+    ini = dict()
+    for line in file(ini_file):
+        if line[0] != '#':
+            parts = line.split('=',1)
+            ini[parts[0].strip()] = parts[1].strip()
+    return ini
+
+
+if __name__ == '__main__':
+    ####
+    # input: ini file, file containing the list of HTML documents and query
+    #
+    ini_file = sys.argv[1]
+    htmls_file = sys.argv[2]
+    query_str = " ".join(sys.argv[3:])
+
+    ini = load_ini(ini_file)
+    htmls = []
+    html_urls = []
+    for line in file(htmls_file):
+        line = line.strip()
+        parts = line.split('\t')
+        htmls.append(parts[0])
+        html_urls.append(parts[1] if len(parts) > 1 else parts[0])
+
+    (scored_candidates, parsed_query, path_to_index) = find_nuggets(ini, htmls, query_str)
+    
     ####
     # show candidates
     #
@@ -233,10 +256,3 @@ if __name__ == '__main__':
                 printed.add(entry[0]['document'])
         print ""
         rank += 1
-
-    ####
-    # clean up
-    #
-    for i in xrange(0, html_count):
-        os.unlink("%s/to_index/%s.txt" % (tmp_folder, i))
-        

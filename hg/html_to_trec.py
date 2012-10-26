@@ -37,6 +37,30 @@ def extract_para(node, f):
                     nodes.append(cc)
 
 def detag_html_file(infile, outfile, id):
+    from boilerpipe.extract import Extractor
+    try:
+        extractor = Extractor(extractor='ArticleExtractor', url="file://"+infile)
+        extracted_text = extractor.getText()
+        extracted_html = extractor.getHTML()
+
+        soup = BeautifulSoup(extracted_html)
+        output = codecs.open(outfile, encoding='utf-8', mode='w')
+        output.write(u"<DOC>\n<DOCNO>" + unicode(id) + u"</DOCNO>\n<DOCHDR>\n</DOCHDR>\n");
+        head = soup.find('head')
+        if head:
+            title_tag = head.find('title')
+            if title_tag and title_tag.string:
+                output.write(u"<TITLE>" + title_tag.string.replace('\n', ' ') + u"</TITLE>\n")
+
+        extract_para(soup, output)
+        output.write(u"</DOC>\n")
+        output.close()
+    except Exception, exc:
+        return detag_html_file_bs(infile, outfile, id)
+
+    
+
+def detag_html_file_bs(infile, outfile, id):
     try:
         soup = BeautifulSoup(open(infile))
         output = codecs.open(outfile, encoding='utf-8', mode='w')
