@@ -69,7 +69,9 @@ int main(int argc, char** argv) {
 			int byteEnd = documents[i]->positions[wordEnd - 1].end;
 			const char* textPtr = documents[i]->text + byteBegin;
 			cout.write(textPtr, byteEnd - byteBegin);
-			std::cout << std::endl;
+			std::cout << std::endl << std::endl;
+			cout << "----------" << std::endl;
+			cout << "matched-terms:" << endl;
 
 			// show matched terms
 
@@ -78,9 +80,11 @@ int main(int argc, char** argv) {
 				vector<string>& queryPhrase = queryTerms[queryPhraseIndex];
 				for (int queryTermIndex = 0;
 						queryTermIndex < queryPhrase.size(); queryTermIndex++) {
-					cout << queryPhrase[queryTermIndex] << ' ';
+					cout << queryPhrase[queryTermIndex];
+					if(queryTermIndex < queryPhrase.size() - 1)
+					  cout << ' ';
 				}
-				cout << ':';
+				cout << ": ";
 
 				for (int docIndex = wordBegin; docIndex < wordEnd; docIndex++) {
 					bool matched = true;

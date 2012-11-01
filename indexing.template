@@ -1,0 +1,14 @@
+<parameters>
+    <index>{path_to_index}</index>
+    <indexType>indri</indexType>
+    <memory>2G</memory>
+    <field>
+        <name>TITLE</name>
+    </field>
+    <stemmer><name>krovetz</name></stemmer>
+    <corpus>
+      <path>{path_to_corpus}</path>
+      <class>trecweb</class>
+    </corpus>
+</parameters>
+
