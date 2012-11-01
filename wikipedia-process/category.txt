@@ -1,0 +1,5 @@
+http://dbpedia.org/resource/Category:Buildings_and_structures
+http://dbpedia.org/resource/Category:Musicians
+http://dbpedia.org/resource/Category:Actors
+http://dbpedia.org/resource/Category:Politicians
+http://dbpedia.org/resource/Category:Sportspeople
