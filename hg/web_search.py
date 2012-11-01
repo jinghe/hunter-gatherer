@@ -5,6 +5,8 @@ import socket
 import codecs
 import urllib2
 import urlparse
+import httplib
+import ssl
 import sqlite3
 
 HUNTER_GATHERER_USER_AGENT = "Hunter-Gatherer/0.1"
@@ -92,6 +94,9 @@ def fetch_page(url):
     except urllib2.HTTPError as exc:
         print "exception fetching page", exc
         return None
+    except httplib.IncompleteRead as exc:
+        print "exception fetching page", exc
+        return None
 
 def open_db(cache_folder):
     cache_db = "%s/db.sqlite3" % (cache_folder,)
@@ -153,6 +158,11 @@ def ensure_page_query_link(cursor, cache_files_folder, qid,  rank, url):
             print "error fetching page", url, exc
         except socket.timeout as exc:
             print "time out fetching page", url, exc
+        except ssl.SSLError as exc:
+            print "SSL error fetching page", url, exc
+        except urllib2.URLError as exc:
+            print "error fetching page", url, exc
+            
         cursor.execute('''INSERT INTO page (id, url, file_name) VALUES (?,?,?)''', (None, url, file_name))
         rid = cursor.lastrowid
     else:

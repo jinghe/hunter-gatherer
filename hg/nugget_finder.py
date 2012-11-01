@@ -59,18 +59,22 @@ def do_search(query, search_command, path_to_index, num_passages):
 
     return result
 
-def identify_candidates(passages):
+def identify_candidates(passages, main_passage_count, top_documents):
     potential_candidates = dict()
     stopwords = nltk.corpus.stopwords.words('english')
 
     # parse all passages
     seen_documents = set()
     #print len(passages)
+    processed_passages = 0
     for idx in xrange(0, len(passages)):
-        if int(passages[idx][0]['document'])> 20:
+        if int(passages[idx][0]['document']) > top_documents:
             continue
         if passages[idx][0]['document'] in seen_documents:
             continue
+        if processed_passages > main_passage_count:
+            break
+        processed_passages += 1
         seen_documents.add(passages[idx][0]['document'])
         chunks = parse_into_chunks(passages[idx][1])
         passage_counted = set()
@@ -94,7 +98,7 @@ def identify_candidates(passages):
                 passage_counted.add(as_str)
 
             potential_candidates[as_str] = info
-        # print '=== passage =>', re.sub('\s+', ' ', passages[idx][1]), '|=== candidates =>', passage_counted
+        #print '=== passage =>', re.sub('\s+', ' ', passages[idx][1]), '|=== candidates =>', passage_counted
 
     # keep all NEs plus "important" Non-NEs (might need corpus frequencies for that)
     result_candidates = []
@@ -102,7 +106,7 @@ def identify_candidates(passages):
     for potential in potential_candidates:
         entry = potential_candidates[potential]
         if True: # entry['type'] == 'NE' or entry['passage_count'] > entry['total_count'] * 0.8:
-            # print entry['type'], potential
+            #print entry['type'], potential
             result_candidates.append( (potential, entry['tokens']) )
             result_evidence[potential] = \
                                        { 'type' : entry['type'],
@@ -164,18 +168,25 @@ def find_nuggets(ini, htmls, query_str):
     #
     parsed_query = parse_into_chunks(query_str)
 
+    if bool(ini.get('condition_baseline', '')):
+        print "baseline run."
+        return ([], parsed_query, path_to_index)
+
     ####
     # main search
     #
     sys.stderr.write("Main search...\n")
     search_command = ini.get('search_command', './cpp/Search')    
-    main_passages = do_search(parsed_query, search_command, path_to_index, int(ini.get('main_search_passage_count', 3)))
+    main_passages = do_search(parsed_query, search_command, path_to_index, 2000)
 
     ####
     # identify candidates
     #
     sys.stderr.write("Identifying candidates...\n")
-    candidates, main_evidence = identify_candidates(main_passages)
+    top_documents = int(ini.get('top_documents_for_candidate', '20'))
+    candidates, main_evidence = identify_candidates(main_passages,
+                                                    int(ini.get('main_search_passage_count', 3)),
+                                                    top_documents)
 
     ###
     # evidence search
@@ -185,7 +196,8 @@ def find_nuggets(ini, htmls, query_str):
     for candidate in candidates:
         extended_query = list(parsed_query)
         extended_query.append( ('NE', candidate[1] ) )
-        evidence_passages = do_search(extended_query, search_command, path_to_index, int(ini.get('evidence_search_passage_count', 10)))
+        evidence_passages = do_search(extended_query, search_command, path_to_index,
+                                      int(ini.get('evidence_search_passage_count', 10)))
         evidence[candidate[0]] = evidence_passages
 
     ####

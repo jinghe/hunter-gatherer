@@ -2,9 +2,13 @@ from bs4 import BeautifulSoup, Tag, NavigableString
 import codecs
 
 import sys
+import os
+from shutil import copyfile
 #sys.setrecursionlimit(2500)
 
 import collections
+
+USE_BOILERPLATE = False
 
 inline_tags = set([ "tt", "i", "b", "u", "s", "strike", "big", "small", "em", "string",
                 "dfn", "code", "samp", "kbd", "var", "cite", "acronym", "a", "img",
@@ -38,8 +42,16 @@ def extract_para(node, f):
 
 def detag_html_file(infile, outfile, id):
     from boilerpipe.extract import Extractor
+
+    if not USE_BOILERPLATE:
+        return detag_html_file_bs(infile, outfile, id)
+
+    tempfile = "%s.tmp.html" % (infile,) # boilerplate seems to need an html extension
     try:
-        extractor = Extractor(extractor='ArticleExtractor', url="file://"+infile)
+        copyfile(infile, tempfile)
+        extractor = Extractor(extractor='ArticleExtractor', url="file://"+tempfile)
+        os.unlink(tempfile)
+
         extracted_text = extractor.getText()
         extracted_html = extractor.getHTML()
 
@@ -56,6 +68,11 @@ def detag_html_file(infile, outfile, id):
         output.write(u"</DOC>\n")
         output.close()
     except Exception, exc:
+        try:
+            os.unlink(tempfile)
+        except:
+            pass
+
         return detag_html_file_bs(infile, outfile, id)
 
     
