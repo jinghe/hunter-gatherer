@@ -17,7 +17,7 @@ def do_search(query, search_command, path_to_index, num_passages):
     f = generate_param_file(path_to_index, indri_query, num_passages, query_terms)
     
     cmd = 'cpp/Search %s' % (f.name)
-    #sys.stderr.write('Searching ' + indri_query + "\n")
+    sys.stderr.write('Searching %s in file %s\n' % (indri_query, f.name))
     p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=sys.stderr, close_fds=True)
     output = p.stdout.read()
 
@@ -30,6 +30,7 @@ def do_search(query, search_command, path_to_index, num_passages):
 
     result = []
     line_idx = 2 # drop index and query lines
+    #sys.stderr.write('Got %d lines\n' % (len(lines),))
     while line_idx < len(lines):
         line = lines[line_idx]; line_idx += 1
         parts = line.split(" ")
@@ -57,6 +58,8 @@ def do_search(query, search_command, path_to_index, num_passages):
         current_passage = (score_line, "\n".join(text_lines), terms)
         result.append(current_passage)
 
+    #sys.stderr.write('Got %d results\n' % (len(result),))
+
     return result
 
 def identify_candidates(passages, main_passage_count, top_documents):
@@ -79,10 +82,10 @@ def identify_candidates(passages, main_passage_count, top_documents):
         chunks = parse_into_chunks(passages[idx][1])
         passage_counted = set()
         for chunk in chunks:
-            chunk = (chunk[0], map(lambda x: re.sub('[^a-z0-9]',' ', x).strip(), chunk[1]))
+            chunk = (chunk[0], map(lambda x: re.sub('[^A-Za-z0-9]',' ', x).strip(), chunk[1]))
             as_str = " ".join(chunk[1]).strip()
 
-            if as_str in stopwords:
+            if as_str.lower() in stopwords:
                 continue
             
             info = potential_candidates.get(as_str, dict())
@@ -198,7 +201,10 @@ def find_nuggets(ini, htmls, query_str):
         extended_query.append( ('NE', candidate[1] ) )
         evidence_passages = do_search(extended_query, search_command, path_to_index,
                                       int(ini.get('evidence_search_passage_count', 10)))
-        evidence[candidate[0]] = evidence_passages
+        evidence[candidate[0]] = filter(lambda passage: 
+                                        all(map(lambda token: token.lower() in passage[1].lower(), 
+                                                candidate[1])), evidence_passages)
+        sys.stderr.write('Found %d passages\n' % (len(evidence[candidate[0]]),))
 
     ####
     # evaluate evidence

@@ -38,7 +38,7 @@ def generate_indri_query(query, passage_len, passage_inc):
     return indri_query, query_terms
 
 def generate_param_file(index_path, query, res_num, query_terms):
-    f = tempfile.NamedTemporaryFile()
+    f = tempfile.NamedTemporaryFile(delete=True)
     f.write(index_path + '\n')
     f.write(query + '\n')
     f.write(str(res_num) + '\n')
