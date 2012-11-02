@@ -1,11 +1,15 @@
 import os
 import sys
 import re
+import nltk
 
 from operator import itemgetter
 
 from nugget_finder import load_ini, find_nuggets, do_search
 from web_search import web_search
+
+import parser
+import html_to_trec
 
 def query_web_search(query_str, ini):
     cache_folder = ini.get('cache_folder', ini.get('tmp_folder', './tmp') + "/cache")
@@ -19,8 +23,10 @@ def score_passages(passages, scored_candidates):
     # for each passage, find each of the scored candidates in it
     sentences = list()
     for passage in passages:
-        for sentence in passage[1].split(' .'):
-            sentences.append( (passage[0], sentence, passage[1]) )
+        for chunk in passage[1].split(' .'):
+            chunk_sentences = nltk.sent_tokenize(chunk)
+            for sentence in chunk_sentences:
+                sentences.append( (passage[0], sentence, passage[1]) )
             
     final_passages = []
     for passage in sentences:
@@ -37,7 +43,8 @@ def score_passages(passages, scored_candidates):
                 # more interesting math should come here
                 passage_score += candidate_score
                 candidates_in_passage.append(scored_candidate[2])
-            final_passages.append( (passage, passage_score, candidates_in_passage) )
+
+        final_passages.append( (passage, passage_score, candidates_in_passage) )
             
     # sort by score
     final_passages.sort(key=itemgetter(1), reverse=True)
@@ -45,24 +52,60 @@ def score_passages(passages, scored_candidates):
     return final_passages
 
 def assemble_output(final_passages_scored, final_length):
-    def same(text1, text2):
-        #TODO implement ngram overlap
-        return text1 == text2
+    bigrams_cache = dict()
+    
+    def subsummed(old, new, tokens):
+        if new == old:
+            return True
+
+        if len(new) < len(old) and new in old:
+            return True
+
+        if len(new) < len(old) * 1.2 and old in new:
+            return True
+
+        if not old in bigrams_cache:
+            old_tokens =  nltk.model.NgramModel(2, nltk.word_tokenize(old))
+            bigrams_cache[old] = old_tokens
+        else:
+            old_tokens = bigrams_cache[old]
+
+        new_tokens = nltk.model.NgramModel(2, tokens)
+
+        distance = nltk.metrics.jaccard_distance(new_tokens._ngrams, old_tokens._ngrams)
+
+        if distance < 0.3:
+            return True
+        else:
+            bigrams_cache[new] = new_tokens
+            return False
+
+    def clean_text(text):
+        """Remove URLs and other extraneous texts."""
+        text = re.sub('http\:\/\/[a-zA-Z0-9\/\.\-\&]+', '', text)
+        text = re.sub('\s+', ' ', text)
+        return text
     
     # while output is less than final length, accummulate
     output = ""
     idx = 0
     taken = list()
     while len(output) < final_length and idx < len(final_passages_scored):
-        new = re.sub('\s+', ' ', final_passages_scored[idx][0][1])
+        passage_text = clean_text(final_passages_scored[idx][0][1])
+        tokens = nltk.word_tokenize(passage_text)
+
+        if len(tokens) == 0:
+            idx += 1
+            continue
+        
         found = False
         for already in taken:
-            if already == new:
+            if subsummed(already, passage_text, tokens):
                 found = True
                 break
         if not found:
-            output = "%s %s" % (output, new)
-            taken.append(new)
+            output = "%s %s" % (output, passage_text)
+            taken.append(passage_text)
         idx += 1
     
     # shorten to fit
@@ -79,6 +122,14 @@ if __name__ == '__main__':
     query_str = " ".join(sys.argv[2:])
 
     ini = load_ini(ini_file)
+
+    if bool(ini.get('condition_no_cclparser', '')) or \
+           bool(ini.get('condition_baseline', '')):
+        parser.USE_CCLPARSER = False
+
+    if bool(ini.get('condition_no_boilerplate', '')) or \
+           bool(ini.get('condition_baseline', '')):
+        html_to_trec.USE_BOILERPLATE = False
 
     ####
     # fetch results from Web search engine (or cache)
@@ -101,6 +152,13 @@ if __name__ == '__main__':
     ####
     # assemble final output
     #
-    for (final_length, output_type) in [ (1000, 'DESKTOP'), (140, 'MOBILE') ]:
-        print "<%s>%s</%s>" % (output_type, assemble_output(final_passages_scored, final_length), output_type)
+    tmp_folder = ini.get('tmp_folder', './tmp')
+    output_file = "%s/out" % (tmp_folder,)
+    output = file(output_file, 'w')
 
+    for (final_length, output_type) in [ (1000, 'DESKTOP'), (140, 'TWITTER'), (280, 'MOBILE') ]:
+        output.write("<%s>%s</%s>\n" % (output_type, assemble_output(final_passages_scored,
+                                                                     final_length),
+                                      output_type))
+
+    output.close()

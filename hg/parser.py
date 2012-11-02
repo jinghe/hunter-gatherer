@@ -10,6 +10,8 @@ from string import whitespace
 
 atom_end = set('()"\'') | set(whitespace)
 
+USE_CCLPARSER = True
+
 def parse_sexpr(sexp):
     stack, i, length = [[]], 0, len(sexp)
     while i < length:
@@ -145,47 +147,47 @@ def mix_brackets(brackets, ne):
             raise Error("Unknown type: "+type(nt))
 
     def align(br,ne):
-        b_to_n=[None for t in br]
-        n_to_b=[None for t in ne]
-        b_idx=0
-        n_idx=0
+        b_to_n = [None for t in br]
+        n_to_b = [None for t in ne]
+        b_idx = 0
+        n_idx = 0
         while b_idx<len(br) and n_idx<len(ne):
             if br[b_idx][0].lower() == ne[n_idx][0].lower():
-                b_to_n[b_idx]=n_idx
-                n_to_b[n_idx]=b_idx
+                b_to_n[b_idx] = n_idx
+                n_to_b[n_idx] = b_idx
                 n_idx += 1
                 b_idx += 1
             else:
-                found=False
+                found = False
                 s_n_idx = n_idx + 1
                 while s_n_idx < len(ne):
                     if ne[s_n_idx][0].lower() == br[b_idx][0].lower():
-                        found=True
+                        found = True
                         break
                     s_n_idx += 1
                 if found:
                     n_idx = s_n_idx
-                    b_to_n[b_idx]=n_idx
-                    n_to_b[n_idx]=b_idx
+                    b_to_n[b_idx] = n_idx
+                    n_to_b[n_idx] = b_idx
                     n_idx += 1
                     b_idx += 1
                 else:
                     s_b_idx = b_idx + 1
                     while s_b_idx < len(br):
                         if ne[n_idx][0].lower() == br[s_b_idx][0].lower():
-                            found=True
+                            found = True
                             break
                         s_b_idx += 1
                     if found:
                         b_idx = s_b_idx
-                        b_to_n[b_idx]=n_idx
-                        n_to_b[n_idx]=b_idx
+                        b_to_n[b_idx] = n_idx
+                        n_to_b[n_idx] = b_idx
                     n_idx += 1
                     b_idx += 1
         return (b_to_n, n_to_b)
 
-    nbr=number_tokens(type_brackets(brackets))
-    nne=number_tokens(ne_to_typed_brackets(ne))
+    nbr = number_tokens(type_brackets(brackets))
+    nne = number_tokens(ne_to_typed_brackets(ne))
 
     (b_to_n, n_to_b) = align(extract_tokens(nbr), extract_tokens(nne))
 
@@ -249,9 +251,14 @@ def mix_brackets(brackets, ne):
     return remove_numbering(nbr)      
     
 def parse_into_chunks(text):
+    text = re.sub('[^a-zA-Z0-9 ]', '', text)
     tok = nltk.word_tokenize(text)
-    brackets = sexpr_to_brackets(parse_sexpr(cclparse(" ".join(tok))))
     named_entities = ne(tok)
+
+    if USE_CCLPARSER:
+        brackets = sexpr_to_brackets(parse_sexpr(cclparse(" ".join(tok))))
+    else:
+        brackets = map(lambda token: [token,], tok)
 
     return map(lambda x: x if(len(x[1])==1 or x[0] is not None) else ('Non-NE', x[1]),
                mix_brackets(brackets, named_entities))
