@@ -268,8 +268,11 @@ def parse_into_chunks(text):
     else:
         brackets = map(lambda token: [token,], tok)
 
-    return map(lambda x: x if(len(x[1])==1 or x[0] is not None) else ('Non-NE', x[1]),
-               mix_brackets(brackets, named_entities))
+    chunks = map(lambda x: x if(len(x[1])==1 or x[0] is not None) else ('Non-NE', x[1]),
+               mix_brackets(brackets, named_entities)) 
+
+    return chunks
+    
 
 if __name__ == '__main__':
     for line in sys.stdin:
