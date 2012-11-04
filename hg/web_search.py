@@ -181,6 +181,7 @@ def web_search(query_str, cache_folder='/tmp/cache', search_engine='Bing', searc
         pass
 
     # open search index
+    print cache_folder
     (conn, cursor) = open_db(cache_folder)
 
     # query not in index? do search

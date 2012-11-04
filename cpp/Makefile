@@ -6,4 +6,5 @@ INDRI_LIB=-L $(INDRI_FOLDER)/obj -L $(INDRI_FOLDER)/contrib/lemur/obj -L $(INDRI
 
 
 Search: Search.cpp
-	g++ -o Search Search.cpp $(INDRI_INCLUDE) $(INDRI_LIB) -llemur -lindri -DP_NEEDS_GNU_CXX_NAMESPACE=1 -lpthread -lz -shared -fPIC
+	g++ -o Search Search.cpp $(INDRI_INCLUDE) $(INDRI_LIB) -lindri -DP_NEEDS_GNU_CXX_NAMESPACE=1 -lpthread -lz 
+#-shared -fPIC
