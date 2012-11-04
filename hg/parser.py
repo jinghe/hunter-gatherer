@@ -3,6 +3,7 @@ import nltk
 from nltk.tree import Tree
 import re
 import sys
+import time
 
 # from https://gist.github.com/240957
 
@@ -67,16 +68,23 @@ def sexpr_to_brackets(sexpr):
 def cclparse(to_parse):
     HOST = 'localhost'
     PORT = 8852
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((HOST, PORT))
-    s.sendall(to_parse)
-    s.shutdown(socket.SHUT_WR)
-    result = ""
-    while True:
-        data = s.recv(1024)
-        if not data: break
-        result = result + data
-    s.close()
+    parsed = False
+    while not parsed:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((HOST, PORT))
+            s.sendall(to_parse)
+            s.shutdown(socket.SHUT_WR)
+            result = ""
+            while True:
+                data = s.recv(1024)
+                if not data: break
+                result = result + data
+            s.close()
+            parsed = True
+        except:
+            print "Error connecting to CCLParser, waiting..."
+            time.sleep(20)
     return result
 
 def ne(tok_text):

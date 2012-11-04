@@ -90,6 +90,7 @@ def assemble_output(final_passages_scored, final_length):
     output = ""
     idx = 0
     taken = list()
+    evidence = list()
     while len(output) < final_length and idx < len(final_passages_scored):
         passage_text = clean_text(final_passages_scored[idx][0][1])
         tokens = nltk.word_tokenize(passage_text)
@@ -105,6 +106,7 @@ def assemble_output(final_passages_scored, final_length):
                 break
         if not found:
             output = "%s %s" % (output, passage_text)
+            evidence.append(final_passages_scored[idx][0][0]['document']
             taken.append(passage_text)
         idx += 1
     
@@ -112,16 +114,9 @@ def assemble_output(final_passages_scored, final_length):
     while len(output) > final_length:
         output = re.sub('\s+[^\s]*$' , '', output)
     
-    return output
+    return (output, evidence)
 
-if __name__ == '__main__':
-    ####
-    # input: ini file and query
-    #
-    ini_file = sys.argv[1]
-    query_str = " ".join(sys.argv[2:])
-
-    ini = load_ini(ini_file)
+def one_click_search(ini, query_str, outputs):
 
     if bool(ini.get('condition_no_cclparser', '')) or \
            bool(ini.get('condition_baseline', '')):
@@ -152,13 +147,31 @@ if __name__ == '__main__':
     ####
     # assemble final output
     #
+    results = {}
+
+    for (final_length, output_type) in outputs:
+        results[output_type] = assemble_output(final_passages_scored, final_length)
+    
+    return results
+
+
+if __name__ == '__main__':
+    ####
+    # input: ini file and query
+    #
+    ini_file = sys.argv[1]
+    query_str = " ".join(sys.argv[2:])
+
+    ini = load_ini(ini_file)
+
+    results = one_click_search(ini, query_str, (1000, 'DESKTOP'), (140, 'TWITTER'), (280, 'MOBILE'))
+
     tmp_folder = ini.get('tmp_folder', './tmp')
     output_file = "%s/out" % (tmp_folder,)
     output = file(output_file, 'w')
 
-    for (final_length, output_type) in [ (1000, 'DESKTOP'), (140, 'TWITTER'), (280, 'MOBILE') ]:
-        output.write("<%s>%s</%s>\n" % (output_type, assemble_output(final_passages_scored,
-                                                                     final_length),
-                                      output_type))
+    for output_type) in results:
+        output_text = results[output_type][0]
+        output.write("<%s>%s</%s>\n" % (output_type, output_text, output_type))
 
     output.close()
