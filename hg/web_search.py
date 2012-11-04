@@ -117,27 +117,38 @@ def add_query(cursor, query, search_engine):
                    (None, query, search_engine))
     return cursor.lastrowid
 
+def copy_existing_page(cursor, cache_files_folder, src_file, url):
+    rid = cursor.execute('''SELECT id FROM page WHERE url = ?''',  (url,)).fetchone()
+    if rid is None:
+        file_number = cursor.execute('''SELECT id FROM page ORDER BY ID DESC LIMIT 1''').fetchone()
+        file_number = 0 if file_number is None else file_number[0]
+        file_name = write_to_disk(cache_files_folder, file_number, file(src_file).read())
+
+        cursor.execute('''INSERT INTO page (id, url, file_name) VALUES (?,?,?)''', (None, url, file_name))
+        rid = cursor.lastrowid
+    return rid
+
+def write_to_disk(base_folder, num, bytes):
+    num_str = str(num)
+    if len(num_str) < 2:
+        num_str = "0%s" % (num_str,)
+    chars = list(num_str)
+    chars.reverse()
+    file_name = "%s/%s/%d" % (chars[0], chars[1], num)
+    first = "%s/%s" % (base_folder, chars[0])
+    second = "%s/%s" % (first, chars[1])
+    def mkdirs(folder):
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+    mkdirs(first)
+    mkdirs(second)
+    output = open("%s/%s" % (base_folder, file_name), 'w')
+    output.write(bytes)
+    output.close()
+    return file_name
+
 def ensure_page_query_link(cursor, cache_files_folder, qid,  rank, url):
     """Fetch a page if necessary and record query / url link"""
-
-    def write_to_disk(base_folder, num, bytes):
-        num_str = str(num)
-        if len(num_str) < 2:
-            num_str = "0%s" % (num_str,)
-        chars = list(num_str)
-        chars.reverse()
-        file_name = "%s/%s/%d" % (chars[0], chars[1], num)
-        first = "%s/%s" % (base_folder, chars[0])
-        second = "%s/%s" % (first, chars[1])
-        def mkdirs(folder):
-            if not os.path.exists(folder):
-                os.mkdir(folder)
-        mkdirs(first)
-        mkdirs(second)
-        output = open("%s/%s" % (base_folder, file_name), 'w')
-        output.write(bytes)
-        output.close()
-        return file_name
 
     # in index?
     rid = cursor.execute('''SELECT id FROM page WHERE url = ?''',  (url,)).fetchone()
