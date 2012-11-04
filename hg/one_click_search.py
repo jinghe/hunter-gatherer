@@ -110,8 +110,10 @@ def assemble_output(final_passages_scored, final_length):
         if not found:
             if not tokens[-1] in [ '.', '!', '?' ]:
                 tokens.append('.')
-            output = "%s %s" % (output, ' '.join(tokens))
-            evidence.append(final_passages_scored[idx][0][0]['document']
+            reassembled_passage = ' '.join(tokens)
+            reassembled_passage = re.sub(" ([\.\,\.\'\;])", '\\1', reassembled_passage).strip()
+            output = "%s %s" % (output, reassembled_passage)
+            evidence.append(final_passages_scored[idx][0][0]['document'])
             taken.append(passage_text)
         idx += 1
     
@@ -169,13 +171,13 @@ if __name__ == '__main__':
 
     ini = load_ini(ini_file)
 
-    results = one_click_search(ini, query_str, (1000, 'DESKTOP'), (140, 'TWITTER'), (280, 'MOBILE'))
+    results = one_click_search(ini, query_str, [ (1000, 'DESKTOP'), (140, 'TWITTER'), (280, 'MOBILE') ])
 
     tmp_folder = ini.get('tmp_folder', './tmp')
     output_file = "%s/out" % (tmp_folder,)
     output = file(output_file, 'w')
 
-    for output_type) in results:
+    for output_type in results:
         output_text = results[output_type][0]
         output.write("<%s>%s</%s>\n" % (output_type, output_text, output_type))
 

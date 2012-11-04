@@ -4,6 +4,7 @@ import re
 import subprocess
 import nltk
 
+from shutil import copyfile
 from subprocess import Popen, PIPE, STDOUT
 from operator import itemgetter
 
@@ -17,7 +18,7 @@ def do_search(query, search_command, path_to_index, num_passages):
     f = generate_param_file(path_to_index, indri_query, num_passages, query_terms)
     
     cmd = 'cpp/Search %s' % (f.name)
-    sys.stderr.write('Searching %s in file %s\n' % (indri_query, f.name))
+    #sys.stderr.write('Searching %s in file %s\n' % (indri_query, f.name))
     p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=sys.stderr, close_fds=True)
     output = p.stdout.read()
 
@@ -144,7 +145,13 @@ def find_nuggets(ini, htmls, query_str):
         
     html_count = 0
     for html in htmls:
-        detag_html_file(infile=html,outfile="%s/%s.txt" % (path_to_corpus, html_count), id=html_count)
+        outfile = "%s/%s.txt" % (path_to_corpus, html_count)
+        cached_detag = "%s.txt" % (html,)
+        if os.path.exists(cached_detag):
+            copyfile(cached_detag, outfile)
+        else:
+            detag_html_file(infile=html,outfile=outfile,id=html_count)
+            copyfile(outfile, cached_detag)
         html_count += 1
 
     ####
@@ -204,7 +211,7 @@ def find_nuggets(ini, htmls, query_str):
         evidence[candidate[0]] = filter(lambda passage: 
                                         all(map(lambda token: token.lower() in passage[1].lower(), 
                                                 candidate[1])), evidence_passages)
-        sys.stderr.write('Found %d passages\n' % (len(evidence[candidate[0]]),))
+        #sys.stderr.write('Found %d passages\n' % (len(evidence[candidate[0]]),))
 
     ####
     # evaluate evidence
