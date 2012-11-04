@@ -84,6 +84,7 @@ def assemble_output(final_passages_scored, final_length):
         """Remove URLs and other extraneous texts."""
         text = re.sub('http\:\/\/[a-zA-Z0-9\/\.\-\&]+', '', text)
         text = re.sub('\s+', ' ', text)
+        text = re.sub('\<\/TITLE\>', ' ', text)
         return text
     
     # while output is less than final length, accummulate
@@ -98,6 +99,8 @@ def assemble_output(final_passages_scored, final_length):
         if len(tokens) == 0:
             idx += 1
             continue
+
+        tokens = filter(lambda token: len(token) < 26, tokens)
         
         found = False
         for already in taken:
@@ -105,7 +108,9 @@ def assemble_output(final_passages_scored, final_length):
                 found = True
                 break
         if not found:
-            output = "%s %s" % (output, passage_text)
+            if not tokens[-1] in [ '.', '!', '?' ]:
+                tokens.append('.')
+            output = "%s %s" % (output, ' '.join(tokens))
             evidence.append(final_passages_scored[idx][0][0]['document']
             taken.append(passage_text)
         idx += 1
