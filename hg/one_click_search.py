@@ -10,6 +10,7 @@ from web_search import web_search
 
 import parser
 import html_to_trec
+import nugget_finder
 
 def query_web_search(query_str, ini):
     cache_folder = ini.get('cache_folder', ini.get('tmp_folder', './tmp') + "/cache")
@@ -132,6 +133,9 @@ def one_click_search(ini, query_str, outputs):
     if bool(ini.get('condition_no_boilerplate', '')) or \
            bool(ini.get('condition_baseline', '')):
         html_to_trec.USE_BOILERPLATE = False
+
+    if bool(ini.get('condition_patterns', '')):
+        nugget_finder.USE_PATTERNS = True
 
     ####
     # fetch results from Web search engine (or cache)

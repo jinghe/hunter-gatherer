@@ -13,6 +13,8 @@ from parser import parse_into_chunks
 from html_to_trec import detag_html_file
 from pattern import parse_pattern_chunks
 
+USE_PATTERNS = False
+
 def do_search(query, search_command, path_to_index, num_passages):
     
     indri_query, query_terms = generate_indri_query(query,120, 50)
@@ -82,7 +84,10 @@ def identify_candidates(passages, main_passage_count, top_documents):
         processed_passages += 1
         seen_documents.add(passages[idx][0]['document'])
         passage_text = passages[idx][1]
-        chunks =  parse_pattern_chunks(passage_text) + parse_into_chunks(passage_text)
+        chunks = []
+        if USE_PATTERNS:
+            chunks += parse_pattern_chunks(passage_text)
+        chunks +=  parse_into_chunks(passage_text)
         passage_counted = set()
         for chunk in chunks:
             chunk = (chunk[0], map(lambda x: re.sub('[^A-Za-z0-9]',' ', x).strip(), chunk[1]))

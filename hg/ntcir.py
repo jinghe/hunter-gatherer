@@ -86,7 +86,9 @@ if __name__ == '__main__':
             for evidence in result[1]:
                 #TODO evidence id to page
                 if not evidence in printed:
-                    output.write('%s\tSOURCE\t%s\n' % (query_id, html_urls[int(evidence)]))
+                    url = html_urls[int(evidence)]
+                    url = re.sub('.*/', '', url)
+                    output.write('%s\tSOURCE\t%s\n' % (query_id, url))
                     printed.add(evidence)
 
     output_desktop.close()
