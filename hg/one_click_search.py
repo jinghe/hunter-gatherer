@@ -159,7 +159,7 @@ def one_click_search(ini, query_str, outputs):
     for (final_length, output_type) in outputs:
         results[output_type] = assemble_output(final_passages_scored, final_length)
     
-    return results
+    return (results, html_urls)
 
 
 if __name__ == '__main__':

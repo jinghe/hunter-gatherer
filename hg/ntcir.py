@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 from shutil import copyfile
 
 
@@ -78,11 +79,15 @@ if __name__ == '__main__':
             register_query_pages(query_id, query_str, cursor, ntcir_urls_folder, ntcir_htmls_folder, cache_folder)
             conn.commit()
 
-        results = one_click_search(ini, query_str, [(1000, 'DESKTOP'), (280, 'MOBILE')])
+        (results, html_urls) = one_click_search(ini, query_str, [(1000, 'DESKTOP'), (280, 'MOBILE')])
         for (output, result) in [(output_desktop, results['DESKTOP']), (output_mobile, results['MOBILE'])]:
             output.write('%s\tOUT\t%s\n' % (query_id, re.sub('\n', ' ', result[0])))
+            printed = set()
             for evidence in result[1]:
-                output.write('%s\tSOURCE\t%s\n' % (query_id, evidence))
+                #TODO evidence id to page
+                if not evidence in printed:
+                    output.write('%s\tSOURCE\t%s\n' % (query_id, html_urls[int(evidence)]))
+                    printed.add(evidence)
 
     output_desktop.close()
     output_mobile.close()

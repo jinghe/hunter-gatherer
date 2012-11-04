@@ -228,11 +228,12 @@ def find_nuggets(ini, htmls, query_str):
     ####
     # clean up
     #
-    for i in xrange(0, html_count):
-        try:
-            os.unlink("%s/to_index/%s.txt" % (tmp_folder, i))
-        except:
-            pass
+    if False:
+        for i in xrange(0, html_count):
+            try:
+                os.unlink("%s/to_index/%s.txt" % (tmp_folder, i))
+            except:
+                pass
 
     return (scored_candidates, parsed_query, path_to_index)
 
