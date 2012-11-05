@@ -1,6 +1,6 @@
 import sys
 
-#from crf import server_base_tag, server_apply_tag
+from crf import server_base_tag, server_apply_tag
 
 def parse_pattern_chunks(text):
     chunk_set = set()
