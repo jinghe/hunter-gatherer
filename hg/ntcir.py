@@ -67,6 +67,9 @@ if __name__ == '__main__':
     output_desktop.write('SYSDESC\t%s -- desktop\n' % (system_description,))
     output_mobile.write('SYSDESC\t%s -- mobile\n' % (system_description,))
 
+    output_desktop.close()
+    output_mobile.close()
+
     for query in queries:
         query_id = query['id']
         query_str = query['query']
