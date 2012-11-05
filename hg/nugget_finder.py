@@ -3,16 +3,18 @@ import os
 import re
 import subprocess
 import nltk
+import numpy as np
 
 from shutil import copyfile
 from subprocess import Popen, PIPE, STDOUT
 from operator import itemgetter
+from multiprocessing import Pool
 
 from query import generate_indri_query, generate_param_file
 from parser import parse_into_chunks
 from html_to_trec import detag_html_file
 from pattern import parse_pattern_chunks
-from candidate_scorer import CandidateScorer
+from candidate_scorer import CandidateScorer, Searcher
 
 USE_PATTERNS = False
 USE_CANDIDATE_SCORER = False
@@ -141,6 +143,21 @@ def score_candidate(candidate, evidence, main_evidence, query):
     return score * (1.0 if main_evidence.get('type', 'Non-NE') == 'NE' else 1.0)
 
 
+class PoolScorer:
+    def __init__(self, ini):
+        if USE_CANDIDATE_SCORER:
+            self.scorer = CandidateScorer(ini)
+
+    def __call__(self, instance):    
+        score = 0
+        candidate, evidence, main_evidence, parsed_query = instance
+        if USE_CANDIDATE_SCORER:
+            score = self.scorer.score(*instance)
+        else:
+            score = score_candidate(*instance)
+        return candidate, score, evidence
+
+
 def find_nuggets(ini, htmls, query_str):
     tmp_folder = ini.get('tmp_folder', './tmp')
 
@@ -212,34 +229,53 @@ def find_nuggets(ini, htmls, query_str):
     #
     sys.stderr.write("Evidence searching...\n")
     evidence = dict()
-    for candidate in candidates:
-        extended_query = list(parsed_query)
-        extended_query.append( ('NE', candidate[1] ) )
-        evidence_passages = do_search(extended_query, search_command, path_to_index,
-                                      int(ini.get('evidence_search_passage_count', 10)))
-        evidence[candidate[0]] = filter(lambda passage: 
-                                        all(map(lambda token: token.lower() in passage[1].lower(), 
-                                                candidate[1])), evidence_passages)
+    #for candidate in candidates:
+        #extended_query = list(parsed_query)
+        #extended_query.append( ('NE', candidate[1] ) )
+        #evidence_passages = do_search(extended_query, search_command, path_to_index,
+                                      #int(ini.get('evidence_search_passage_count', 10)))
+        #evidence[candidate[0]] = filter(lambda passage: 
+                                        #all(map(lambda token: token.lower() in passage[1].lower(), 
+                                                #candidate[1])), evidence_passages)
         #sys.stderr.write('Found %d passages\n' % (len(evidence[candidate[0]]),))
+
+
+    searcher = Searcher(search_command, path_to_index,
+                                      int(ini.get('evidence_search_passage_count', 10)))
+    p = Pool(8)
+    queries = map(lambda candidate: list(parsed_query) + [('NE', candidate[1] )], candidates)
+    evidence_passages_list = p.map(searcher, queries, 50)
+    p.close()
+    for i in xrange(len(candidates)):
+        candidate = candidates[i]
+        evidence[candidate[0]] = filter(lambda passage: 
+                                        all(map(lambda token: token.lower() in passage[1].lower(), candidate[1])), evidence_passages_list[i])
+
 
     ####
     # evaluate evidence
     #
     sys.stderr.write("Evaluating evidence...\n")
     scored_candidates = list()
-    if USE_CANDIDATE_SCORER:
-        scorer = CandidateScorer(ini)
-    for candidate in evidence:
-        scored_candidates.append( (candidate,
-                                   scorer.score(candidate,
-                                                evidence[candidate],
-                                                main_evidence[candidate],
-                                                parsed_query) if USE_CANDIDATE_SCORER else \
-                                   score_candidate(candidate,
-                                                evidence[candidate],
-                                                main_evidence[candidate],
-                                                parsed_query),
-                                   evidence[candidate]) )
+    #if USE_CANDIDATE_SCORER:
+        #scorer = CandidateScorer(ini)
+    #for candidate in evidence:
+        #scored_candidates.append( (candidate,
+                                   #scorer.score(candidate,
+                                                #evidence[candidate],
+                                                #main_evidence[candidate],
+                                                #parsed_query) if USE_CANDIDATE_SCORER else \
+                                   #score_candidate(candidate,
+                                                #evidence[candidate],
+                                                #main_evidence[candidate],
+                                                #parsed_query),
+                                   #evidence[candidate]) )
+
+    pool_scorer = PoolScorer(ini)
+    p = Pool(8)
+    scorerd_candidates = p.map(pool_scorer, map(lambda candidate: (candidate, evidence[candidate], main_evidence[candidate], parsed_query), evidence.keys()))
+    p.close()
+
     ####
     # clean up
     #

@@ -19,76 +19,7 @@ from web_search import web_search
 from html_to_trec import detag_html_file
 from parser import parse_into_chunks
 import parser
-
-def get_type_features(type_str):
-    features = [0,0,0]
-    if not type_str:
-        features[2] = 1
-    elif type_str == 'NE':
-        features[0] = 1
-    elif type_str.startswith('wiki'):
-        features[1] = 1
-    else:
-        features[2] = 1
-    return features
-
-def get_main_evidence_features(main_evidence):
-    score = 1.0
-    for entry in main_evidence.get('passages', []):
-        score_line = entry[0]
-        score += 100.0 + score_line['score']
-    return [score, np.log(score)]
-    
-def get_evidence_features(evidence):
-    score = 1.0
-    for entry in evidence:
-        score_line = entry[0]
-        score += 100.0 + score_line['score']
-    return [score, np.log(score)]
-
-def get_idf_features(dumpindex_command, index_path, candidate):
-    features = []
-    tokens = candidate.split()
-    tokens_string = candidate
-    search_patterns = [''"#1(%s)"'', ''"#urd8(%s)"'', ''"#band(%s)"'']
-    for search_pattern in search_patterns:
-        command = [dumpindex_command, index_path, 'xcount', search_pattern % tokens_string]
-        p = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-        line = p.stdout.readline().strip()
-        pos = line.rfind(':')
-        num = float(line[pos+1:])
-        num += 1
-        features += [num, np.log(num)]
-        if len(tokens) == 1:
-            features += [num, np.log(num)]
-            features += [num, np.log(num)]
-            break
-    return features
-        
-
-def extract_candidate_features(candidate, evidence, main_evidence, dumpindex_command, term_stat_index):
-    features = [];
-    candidate_type = main_evidence['type']
-    features = get_type_features(candidate_type) + get_main_evidence_features(main_evidence) + get_evidence_features(evidence) + get_idf_features(dumpindex_command, term_stat_index, candidate) 
-    return features
-
-def expand_groudtruth(sample_dir, out_path):
-    query_path = '%s/1C2-E-SAMPLE.tsv' % sample_dir
-    query_ids = map(lambda line: line.strip().split()[0],  open(query_path).readlines())
-    queries = map(lambda line: ' '.join(line.strip().split()[2:]),  open(query_path).readlines())
-    writer = open(out_path, 'w')
-
-    for i in xrange(len(query_ids)):
-        writer.write('%s\ncate\nurl\n' % queries[i])
-        iunit_path = '%s/1C2-E-SAMPLE.iUnits/%s.iUnits.tsv' % (sample_dir, query_ids[i])
-        for line in open(iunit_path).readlines():
-            if line.startswith('V'):
-                line = ' '.join(filter(lambda token: not token.startswith('DEP'), line.split()[1:]))
-                line = ''.join(map(lambda x: re.sub('[^A-Za-z0-9]',' ', x), line.strip()))
-                tokens = line.split()
-                writer.write('%s\n' % ' '.join(tokens))
-        writer.write('\n')
-    writer.close()
+from candidate_scorer import *
 
 def read_groundtruth(path):
     records = []
@@ -125,17 +56,6 @@ def do_get_train_html(groundtruth_path, index_path, html_folder):
             trec_writer.write(Document('%s-%d' % (query_filename, count), html))
             count += 1
         trec_writer.close()
-
-class Searcher:
-    def __init__(self, search_command, index_path, ret_size):
-        self.search_command = search_command
-        self.index_path = index_path
-        self.ret_size = ret_size
-
-    def __call__(self, query):
-        from nugget_finder import load_ini, do_search, identify_candidates
-        
-        return do_search(query, self.search_command, self.index_path, self.ret_size)
 
 class TrainGenerator:
     def __init__(self, dumpindex_command, index_path):
@@ -226,9 +146,9 @@ def gen_nugget_train(ini, htmls, query_str, good_text):
     sys.stderr.write("Evidence searching...\n")
     evidence = dict()
     t0 = time.time()
-    p = Pool(8)
     searcher = Searcher(search_command, path_to_index,
                                       int(ini.get('evidence_search_passage_count', 10)))
+    p = Pool(8)
     queries = map(lambda candidate: list(parsed_query) + [('NE', candidate[1] )], candidates)
     evidence_passages_list = p.map(searcher, queries, 50)
     p.close()
@@ -343,7 +263,7 @@ def traintest_model(train_path):
     y = data[:,0]
     X = data[:,1:]
     sample_size = len(y)
-    train_size = int(sample_size * .9)
+    train_size = int(sample_size * .95)
 
     X_train, X_test = X[:train_size], X[train_size:]
     y_train, y_test = y[:train_size], y[train_size:]
@@ -380,6 +300,36 @@ def traintest_model(train_path):
                 color=color, label=label)
     pl.show()
 
+
+def test_feature(train_path):
+    data = np.genfromtxt(train_path, delimiter = ',')
+    y = data[:,0]
+    X = data[:,1:]
+    sample_size = len(y)
+    train_size = int(sample_size * .95)
+
+    params = {'n_estimators': 100, 'max_depth': 2, 'random_state': 1,
+                       'min_samples_split': 5}
+    params.update({'learn_rate': 0.02, 'subsample': 1.0})
+    clf = ensemble.GradientBoostingClassifier(**params)
+    clf.fit(X, y)
+
+    pl.figure()
+    feature_names = np.array(['type', 'type', 'type', 'main', 'log_main', 'evi', 'log_evi', 'df1', 'log_df1', 'dfu8', 'log_dfu8', 'dfband', 'log_dfband'])
+
+    feature_importance = clf.feature_importances_
+# make importances relative to max importance
+    feature_importance = 100.0 * (feature_importance / feature_importance.max())
+    sorted_idx = np.argsort(feature_importance)[-8:]
+    pos = np.arange(sorted_idx.shape[0]) + .5
+    pl.barh(pos, feature_importance[sorted_idx], align='center')
+    pl.yticks(pos, feature_names[sorted_idx])
+    pl.xlabel('Relative Importance')
+    pl.title('Variable Importance')
+    pl.show()
+
+    
+
 def do_learn_model(train_path, model_path):
     print 'loading......'
     data = np.genfromtxt(train_path, delimiter = ',')
@@ -390,7 +340,7 @@ def do_learn_model(train_path, model_path):
     
     params.update({'learn_rate': 0.05, 'subsample': 0.5})
     clf = ensemble.GradientBoostingClassifier(**params)
-    clf.fit(X_train, y_train)
+    clf.fit(X, y)
     joblib.dump(clf, model_path, 3)
 
 
@@ -410,6 +360,8 @@ if __name__ == '__main__':
         do_adjust_train(*argv)
     elif option == '--test-model':
         traintest_model(*argv)
+    elif option == '--test-feature':
+        test_feature(*argv)
     elif option == '--learn-model':
         do_learn_model(*argv)
 
