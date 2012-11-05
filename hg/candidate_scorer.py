@@ -50,7 +50,7 @@ def get_idf_features(dumpindex_command, index_path, candidate):
     tokens_string = candidate
     search_patterns = [''"#1(%s)"'', ''"#urd8(%s)"'', ''"#band(%s)"'']
     for search_pattern in search_patterns:
-        command = [dumpindex_command, index_path, 'dx', search_pattern % tokens_string]
+        command = [dumpindex_command, index_path, 'xcount', search_pattern % tokens_string]
         p = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
         line = p.stdout.readline().strip()
         pos = line.rfind(':')
@@ -71,14 +71,24 @@ def extract_candidate_features(candidate, evidence, main_evidence, dumpindex_com
     return features
 
 class CandidateScorer:
-    def __init__(ini): 
+    def __init__(self, ini): 
         self.dumpindex_command = ini.get('dumpindex_command', 'dumpindex')
         self.stat_index = ini.get('stat_index')
         self.model = joblib.load(ini.get('score_model'))
 
-    def score(candidate, evidence, main_evidence, query):
+    def score(self, candidate, evidence, main_evidence, query):
         features = extract_candidate_features(candidate, evidence, main_evidence, query, self.dumpindex_command, self.stat_index)
         return self.model.predict(np.array(features))
+#=======
+
+        #print candidate, features
+        #if features[6] == 0.0:
+            #return 0.0
+        #return features[0] * 0.5 + features[1] * 0.5 + features[2] * 0.5 + \
+                 #(features[3] + features[5]) /  features[6] #((features[6] + features[7] + features[8]) / 3. + 0.000001) # evidence times IDF
+        
+        ##TODO: add real score code
+#>>>>>>> be60293e4ef4b86c3f91f2255b6aa963428f2a11
 
 
 def expand_groudtruth(sample_dir, out_path):
@@ -294,15 +304,29 @@ def do_gen_nugget_train(ini_path):
             print e
     writer.close()
 
-def do_adjust_train(groundtruth_path, train_path):
+def do_adjust_train(groundtruth_path, train_path, new_train_path):
     groundtruth = read_groundtruth(groundtruth_path)
     groundtruth_dict = {}
     map(lambda querytext: groundtruth_dict.__setitem__(query_text[0], set(map(lambda token: token.lower(), word_tokenize(query_text[1])))), groundtruth)
     
+    values_list = []
     train = open(train_path)
     line = train.readline()
     while line:
-        value, comment = line.split('#')
+        value, comment = line.strip().split('#')
+        query, nugget = comment.split(':')
+        termset = groundtruth_dict[query]
+        values = map(float, value.split(','))
+        is_good = all(map(lambda token: termset.__contains__(token.lower()), nugget.split()))
+        values[0] = is_good
+        values_list.append(values)
+        line = train.readline()
+
+    writer = open(new_train_path, 'w')
+    for values in values_list:
+        writer.write('%s\n' % ','.join(map(str, values)))
+    writer.close()
+    
 
 
 def do_learn_model(train_path, model_path):

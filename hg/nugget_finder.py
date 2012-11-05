@@ -12,6 +12,10 @@ from query import generate_indri_query, generate_param_file
 from parser import parse_into_chunks
 from html_to_trec import detag_html_file
 from pattern import parse_pattern_chunks
+from candidate_scorer import CandidateScorer
+
+USE_PATTERNS = False
+USE_CANDIDATE_SCORER = False
 
 def do_search(query, search_command, path_to_index, num_passages):
     
@@ -82,7 +86,10 @@ def identify_candidates(passages, main_passage_count, top_documents):
         processed_passages += 1
         seen_documents.add(passages[idx][0]['document'])
         passage_text = passages[idx][1]
-        chunks =  parse_pattern_chunks(passage_text) + parse_into_chunks(passage_text)
+        chunks = []
+        if USE_PATTERNS:
+            chunks += parse_pattern_chunks(passage_text)
+        chunks +=  parse_into_chunks(passage_text)
         passage_counted = set()
         for chunk in chunks:
             chunk = (chunk[0], map(lambda x: re.sub('[^A-Za-z0-9]',' ', x).strip(), chunk[1]))
@@ -126,7 +133,7 @@ def score_candidate(candidate, evidence, main_evidence, query):
     for entry in main_evidence.get('passages', []):
         score_line = entry[0]
         score += 100.0 + score_line['score']
-    
+
     for entry in evidence:
         score_line = entry[0]
         score += 100.0 + score_line['score']
@@ -220,21 +227,47 @@ def find_nuggets(ini, htmls, query_str):
     #
     sys.stderr.write("Evaluating evidence...\n")
     scored_candidates = list()
+    if USE_CANDIDATE_SCORER:
+        scorer = CandidateScorer(ini)
     for candidate in evidence:
         scored_candidates.append( (candidate,
+                                   scorer.score(candidate,
+                                                evidence[candidate],
+                                                main_evidence[candidate],
+                                                parsed_query) if USE_CANDIDATE_SCORER else \
                                    score_candidate(candidate,
-                                                   evidence[candidate],
-                                                   main_evidence[candidate],
-                                                   parsed_query),
+                                                evidence[candidate],
+                                                main_evidence[candidate],
+                                                parsed_query),
                                    evidence[candidate]) )
     ####
     # clean up
     #
-    for i in xrange(0, html_count):
-        try:
-            os.unlink("%s/to_index/%s.txt" % (tmp_folder, i))
-        except:
-            pass
+    if False:
+        for i in xrange(0, html_count):
+            try:
+                os.unlink("%s/to_index/%s.txt" % (tmp_folder, i))
+            except:
+                pass
+
+    ####
+    # show candidates
+    #
+    if True:
+        scored_candidates.sort(key=itemgetter(1), reverse=True)
+        rank = 0;
+        for candidate_score in scored_candidates:
+            candidate, score, evidence = candidate_score
+            print candidate
+            print '\t', rank, score
+            #printed = set()
+            #for entry in evidence:
+            #    if not entry[0]['document'] in printed:
+            #        print entry[0]['document'], entry[0]['score']
+            #        printed.add(entry[0]['document'])
+            #        print ""
+            rank += 1
+ 
 
     return (scored_candidates, parsed_query, path_to_index)
 
