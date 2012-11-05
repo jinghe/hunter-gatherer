@@ -2,4 +2,5 @@ numpy
 nltk
 beautifulsoup4
 git+https://github.com/misja/python-boilerpipe.git#egg=python-boilerpipe
-
+scikit-learn
+joblib
