@@ -1,14 +1,18 @@
 import sys
 
 from crf import server_base_tag, server_apply_tag
+from data_process import TaggedText
 
 def parse_pattern_chunks(text):
     chunk_set = set()
     host = 'localhost'
     base_tag_port = '8854'
     crf_port = '8855'
-    tagged_text = server_base_tag(text, host, base_tag_port)
-    tagged_text = server_apply_tag('.tmp', tagged_text, host, crf_port)
+    try:
+        tagged_text = server_base_tag(text, host, base_tag_port)
+        tagged_text = server_apply_tag('.tmp', tagged_text, host, crf_port)
+    except Exception as e:
+        tagged_text = TaggedText()
     #print tagged_text
     for sentence in tagged_text:
         waiting_chunks = {}

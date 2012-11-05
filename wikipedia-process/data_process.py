@@ -180,6 +180,12 @@ class TaggedText(list):
                         continue
                     self_sentence[j][1].append(tag)
 
+    def __getslice__(self, begin, end):
+        result = TaggedText()
+        result += list.__getslice__(self, begin, end)
+        return result
+
+
     def __str__(self):
         return '\n'.join(map(lambda sentence: ' '.join(map(lambda term_tags: '%s/[%s]' % (term_tags[0], ','.join(term_tags[1])), sentence)), self))
 

@@ -127,30 +127,26 @@ public class MyTrainTest {
 
 	public InstanceList load(String path) {
 		Reader file = null;
-		InstanceList data = null;
-
 		try {
 			file = new FileReader(new File(path));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
+		return load(file);
+	}
+
+	public InstanceList load(Reader file) {
+		InstanceList data = null;
 
 		if (p == null) {
 			p = new SimpleTaggerSentence2FeatureVectorSequence();
 		}
-		// if (targetAlphabet != null){
-		// p.setTargetAlphabet(targetAlphabet);
-		// p.setDataAlphabet(featureAlphabet);
-		// }
+
 		p.getTargetAlphabet().lookupIndex(defaultOption.value);
 		p.setTargetProcessing(true);
 		data = new InstanceList(p);
 		data.addThruPipe(new LineGroupIterator(file, Pattern.compile("^\\s*$"),
 				true));
-		// if (targetAlphabet == null) {
-		// targetAlphabet = data.getTargetAlphabet();
-		// featureAlphabet = data.getDataAlphabet();
-		// }
 		return data;
 	}
 
@@ -187,34 +183,45 @@ public class MyTrainTest {
 		}
 		return answers;
 	}
+	
+	public void test(InstanceList testData, CRF crf, PrintWriter writer){
+		for (int i = 0; i < testData.size(); i++) {
+			if(i == 165){
+				int iii = 0;
+				int jjj = iii;
+			}
+			Sequence input = (Sequence) testData.get(i).getData();
+			Sequence[] outputs = apply(crf, input, 1);
+			int k = outputs.length;
+			boolean error = false;
+			for (int a = 0; a < k; a++) {
+				if (outputs[a].size() != input.size()) {
+					System.err.println("Failed to decode input sequence "
+							+ i + ", answer " + a);
+					error = true;
+				}
+			}
+			if (!error) {
+				for (int j = 0; j < input.size(); j++) {
+					StringBuffer buf = new StringBuffer();
+					for (int a = 0; a < k; a++)
+						buf.append(outputs[a].get(j).toString())
+								.append(" ");
+					if(i == 165){
+						System.out.println(buf);
+					}
+					writer.println(buf.toString());
+				}
+				writer.println();
+			}
+		}
+		writer.close();
+	}
 
 	public void test(InstanceList testData, CRF crf, String outPath) {
 		try {
 			PrintWriter writer = new PrintWriter(new FileWriter(outPath));
-			for (int i = 0; i < testData.size(); i++) {
-				Sequence input = (Sequence) testData.get(i).getData();
-				Sequence[] outputs = apply(crf, input, 1);
-				int k = outputs.length;
-				boolean error = false;
-				for (int a = 0; a < k; a++) {
-					if (outputs[a].size() != input.size()) {
-						System.err.println("Failed to decode input sequence "
-								+ i + ", answer " + a);
-						error = true;
-					}
-				}
-				if (!error) {
-					for (int j = 0; j < input.size(); j++) {
-						StringBuffer buf = new StringBuffer();
-						for (int a = 0; a < k; a++)
-							buf.append(outputs[a].get(j).toString())
-									.append(" ");
-						writer.println(buf.toString());
-					}
-					writer.println();
-				}
-			}
-			writer.close();
+			test(testData, crf, writer);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

@@ -261,7 +261,7 @@ def do_batch_apply(trec_path, model_dir, pattern_path, out_path, lib_dir):
     global prune_t, label_t
     print time.time() - t, prune_t, label_t
 
-def socket_communicate(message, host, port, timeout = 10.0):
+def socket_communicate(message, host, port, timeout = 15.0):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.settimeout(timeout)
     s.connect((host, int(port)))
@@ -290,17 +290,8 @@ def server_apply_tag(text_path, tagged_text, host, port):
     
     mallet_content = open(mallet_path).read()
     result = ''
-    try:
-        t0 = time.time()
-        result = socket_communicate(mallet_content, host, port)
-    except Exception as e:
-        print '-' * 100
-        print e
-        print time.time() - t0
-        print tagged_text
-        print '-' * 100
-        print mallet_content
-        print '-' * 100
+    t0 = time.time()
+    result = socket_communicate(mallet_content, host, port)
     lines = result.split('\n')
     idx = 0
     for sentence_idx in xrange(len(tagged_text)):
