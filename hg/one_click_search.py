@@ -83,10 +83,13 @@ def assemble_output(final_passages_scored, final_length):
 
     def clean_text(text):
         """Remove URLs and other extraneous texts."""
-        text = re.sub('http\:\/\/[a-zA-Z0-9\/\.\-\&]+', '', text)
+        text = re.sub('http\:\/\/[a-zA-Z0-9\/\.\-\&\_\%\+]+', '', text)
         text = re.sub('\s+', ' ', text)
         text = re.sub('\<\/TITLE\>', ' ', text)
-        return text
+        raw_tokens = text.split(' ')
+        raw_tokens = filter(lambda token: len(token) < 26, raw_tokens)
+
+        return ' '.join(raw_tokens)
     
     # while output is less than final length, accummulate
     output = ""
@@ -101,7 +104,6 @@ def assemble_output(final_passages_scored, final_length):
             idx += 1
             continue
 
-        tokens = filter(lambda token: len(token) < 26, tokens)
         
         found = False
         for already in taken:
@@ -109,11 +111,9 @@ def assemble_output(final_passages_scored, final_length):
                 found = True
                 break
         if not found:
-            if not tokens[-1] in [ '.', '!', '?' ]:
-                tokens.append('.')
-            reassembled_passage = ' '.join(tokens)
-            reassembled_passage = re.sub(" ([\.\,\.\'\;])", '\\1', reassembled_passage).strip()
-            output = "%s %s" % (output, reassembled_passage)
+            if not passage_text[-1] in [ '.', '!', '?' ]:
+                passage_text += '.'
+            output = "%s %s" % (output, passage_text)
             evidence.append(final_passages_scored[idx][0][0]['document'])
             taken.append(passage_text)
         idx += 1
@@ -136,6 +136,9 @@ def one_click_search(ini, query_str, outputs):
 
     if bool(ini.get('condition_patterns', '')):
         nugget_finder.USE_PATTERNS = True
+
+    if bool(ini.get('condition_candidate_scorer', '')):
+        nugget_finder.USE_CANDIDATE_SCORER = True
 
     ####
     # fetch results from Web search engine (or cache)
@@ -175,7 +178,7 @@ if __name__ == '__main__':
 
     ini = load_ini(ini_file)
 
-    results = one_click_search(ini, query_str, [ (1000, 'DESKTOP'), (140, 'TWITTER'), (280, 'MOBILE') ])
+    (results, html_urls) = one_click_search(ini, query_str, [ (1000, 'DESKTOP'), (140, 'TWITTER'), (280, 'MOBILE') ])
 
     tmp_folder = ini.get('tmp_folder', './tmp')
     output_file = "%s/out" % (tmp_folder,)
