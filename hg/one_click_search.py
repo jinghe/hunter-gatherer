@@ -89,7 +89,7 @@ def assemble_output(final_passages_scored, final_length):
         raw_tokens = text.split(' ')
         raw_tokens = filter(lambda token: len(token) < 26, raw_tokens)
 
-        return ' '.join(raw_tokens)
+        return (' '.join(raw_tokens)).strip()
     
     # while output is less than final length, accummulate
     output = ""
@@ -117,6 +117,8 @@ def assemble_output(final_passages_scored, final_length):
             evidence.append(final_passages_scored[idx][0][0]['document'])
             taken.append(passage_text)
         idx += 1
+
+    output = output.strip()
     
     # shorten to fit
     while len(output) > final_length:
