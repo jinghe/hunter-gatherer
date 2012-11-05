@@ -68,25 +68,6 @@ class Searcher:
         return do_search(query, self.search_command, self.index_path, self.ret_size)
 
 
-def expand_groudtruth(sample_dir, out_path):
-    query_path = '%s/1C2-E-SAMPLE.tsv' % sample_dir
-    query_ids = map(lambda line: line.strip().split()[0],  open(query_path).readlines())
-    queries = map(lambda line: ' '.join(line.strip().split()[2:]),  open(query_path).readlines())
-    writer = open(out_path, 'w')
-
-    for i in xrange(len(query_ids)):
-        writer.write('%s\ncate\nurl\n' % queries[i])
-        iunit_path = '%s/1C2-E-SAMPLE.iUnits/%s.iUnits.tsv' % (sample_dir, query_ids[i])
-        for line in open(iunit_path).readlines():
-            if line.startswith('V'):
-                line = ' '.join(filter(lambda token: not token.startswith('DEP'), line.split()[1:]))
-                line = ''.join(map(lambda x: re.sub('[^A-Za-z0-9]',' ', x), line.strip()))
-                tokens = line.split()
-                writer.write('%s\n' % ' '.join(tokens))
-        writer.write('\n')
-    writer.close()
-
-
 
 class CandidateScorer:
     def __init__(self, ini): 
@@ -103,5 +84,6 @@ class CandidateScorer:
 #        return features[0] * 0.5 + features[1] * 0.5 + features[2] * 0.5 + \
 #                 (features[3] + features[5]) / features[6] #((features[6] + features[7] + features[8]) / 3. + 0.000001) # evidence times IDF
         
-        return self.model.predict(np.array(features))
+        score = self.model.predict(np.array(features))[0]
+        return score
 

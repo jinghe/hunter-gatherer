@@ -70,7 +70,10 @@ if __name__ == '__main__':
     output_desktop.close()
     output_mobile.close()
 
+    import time
+    t0 = time.time()
     for query in queries:
+        print query, time.time() - t0
         query_id = query['id']
         query_str = query['query']
 

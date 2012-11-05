@@ -5,6 +5,7 @@ import os
 import time
 from shutil import copyfile, rmtree
 from multiprocessing import Pool
+import random
 
 import numpy as np
 import pylab as pl
@@ -232,30 +233,41 @@ def do_adjust_train(groundtruth_path, train_path, new_train_path):
         query, nugget = comment.split(':')
         termset = groundtruth_dict[query]
         values = map(float, value.split(','))
-        is_good = 1 if all(map(lambda token: termset.__contains__(token.lower()), nugget.split())) else -1;
+        is_good = 1 if all(map(lambda token: termset.__contains__(token.lower()), nugget.split())) else 0;
         values[0] = is_good
         values_list.append(values)
         comment_list.append(comment)
         line = train.readline()
 
     writer = open(new_train_path, 'w')
+    positive_num = len(filter(lambda values: values[0] > 0, values_list))
+    total_num = len(values_list)
+    negative_possibility = positive_num / float(total_num - positive_num)
+    #positive_weight = (total_num - positive_num) / positive_num / 2
+    #print positive_weight
+
     for i in xrange(len(values_list)):
-        writer.write('%s#%s\n' % (','.join(map(str, values_list[i])), comment_list[i]))
+        values = values_list[i]
+        is_write = False
+        if values[0] > 0 or random.random() < negative_possibility:
+            writer.write('%s#%s\n' % (','.join(map(str, values_list[i])), comment_list[i]))
+        #repetition = positive_weight if values[0] > 0 else 1
+        #for j in xrange(repetition):    
+            #writer.write('%s#%s\n' % (','.join(map(str, values_list[i])), comment_list[i]))
+        
     writer.close()
     
 
 
-def my_loss(y_test, y_pred):
-    real_true = float(len(filter(lambda y: y> 0, y_test)))
-    pred_true = float(len(filter(lambda y: y> 0, y_pred)))
-    real_pred_true = len(filter(lambda y: y>0, map(lambda x,y: x and y, y_pred, y_test)))
-    if not pred_true:
-        p = 0.0
-    else:
-        p = real_pred_true / pred_true
-    r = real_pred_true / real_true
-    f = p*r/(p+r)
-    return f
+def my_loss(y_test, y_pred, is_print):
+    sz = len(y_test)
+    loss = 0
+    num = 0
+    for i in xrange(sz):
+        if y_test[i] > 0: 
+            loss += abs(y_test[i] - y_pred[i])
+            num += 1.
+    return loss / num
 
 def traintest_model(train_path):
     print 'loading......'
@@ -268,7 +280,7 @@ def traintest_model(train_path):
     X_train, X_test = X[:train_size], X[train_size:]
     y_train, y_test = y[:train_size], y[train_size:]
 
-    original_params = {'n_estimators': 100, 'max_depth': 2, 'random_state': 1,
+    original_params = {'n_estimators': 2000, 'max_depth': 2, 'random_state': 1,
                        'min_samples_split': 5}
 
     pl.figure()
@@ -281,20 +293,22 @@ def traintest_model(train_path):
                                   ('Shrink=0.05, Sample=0.5', 'gray',
                                    {'learn_rate': 0.05, 'subsample': 0.5}),
                                   ('Shrink=0.02, Sample=0.5', 'black',
-                                   {'learn_rate': 0.02, 'subsample': 0.5})]:
+                                   {'learn_rate': 0.02, 'subsample': 0.5})
+                                  ]:
         print label
         params = dict(original_params)
         params.update(setting)
 
-        clf = ensemble.GradientBoostingClassifier(**params)
+        #clf = ensemble.GradientBoostingClassifier(**params)
+        clf = ensemble.GradientBoostingRegressor(**params)
         clf.fit(X_train, y_train)
 
         # compute test set deviance
         test_deviance = np.zeros((params['n_estimators'],), dtype=np.float64)
 
         for i, y_pred in enumerate(clf.staged_decision_function(X_test)):
-            #test_deviance[i] = clf.loss_(y_test, y_pred)
-            test_deviance[i] = my_loss(y_test, y_pred)
+            test_deviance[i] = clf.loss_(y_test, y_pred)
+            #test_deviance[i] = my_loss(y_test, y_pred, False)
 
         pl.plot(np.arange(test_deviance.shape[0]) + 1, test_deviance, '-',
                 color=color, label=label)
@@ -339,9 +353,30 @@ def do_learn_model(train_path, model_path):
                        'min_samples_split': 5}
     
     params.update({'learn_rate': 0.05, 'subsample': 0.5})
-    clf = ensemble.GradientBoostingClassifier(**params)
+    clf = ensemble.GradientBoostingRegressor(**params)
     clf.fit(X, y)
     joblib.dump(clf, model_path, 3)
+
+def expand_groudtruth(sample_dir, out_path):
+    query_path = '%s/1C2-E-SAMPLE.tsv' % sample_dir
+    query_ids = map(lambda line: line.strip().split()[0],  open(query_path).readlines())
+    queries = map(lambda line: ' '.join(line.strip().split()[2:]),  open(query_path).readlines())
+    writer = open(out_path, 'w')
+
+    for i in xrange(len(query_ids)):
+        writer.write('%s\ncate\nurl\n' % queries[i])
+        iunit_path = '%s/1C2-E-SAMPLE.iUnits/%s.iUnits.tsv' % (sample_dir, query_ids[i])
+        for line in open(iunit_path).readlines():
+            if line.startswith('V'):
+                line = ' '.join(filter(lambda token: not token.startswith('DEP'), line.split()[1:]))
+                line = ''.join(map(lambda x: re.sub('[^A-Za-z0-9]',' ', x), line.strip()))
+                tokens = line.split()
+                writer.write('%s\n' % ' '.join(tokens))
+        writer.write('\n')
+    writer.close()
+
+
+
 
 
 if __name__ == '__main__':
