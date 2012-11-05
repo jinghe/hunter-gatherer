@@ -175,6 +175,8 @@ if __name__ == '__main__':
     ####
     # input: ini file and query
     #
+    import time
+    t0 = time.time()
     ini_file = sys.argv[1]
     query_str = " ".join(sys.argv[2:])
 
@@ -191,3 +193,4 @@ if __name__ == '__main__':
         output.write("<%s>%s</%s>\n" % (output_type, output_text, output_type))
 
     output.close()
+    print 'time:', time.time() - t0

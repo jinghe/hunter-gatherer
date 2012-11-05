@@ -15,6 +15,7 @@ from parser import parse_into_chunks
 from html_to_trec import detag_html_file
 from pattern import parse_pattern_chunks
 from candidate_scorer import CandidateScorer, Searcher
+import fastmap
 
 USE_PATTERNS = False
 USE_CANDIDATE_SCORER = False
@@ -147,6 +148,7 @@ class PoolScorer:
     def __init__(self, ini):
         if USE_CANDIDATE_SCORER:
             self.scorer = CandidateScorer(ini)
+        self.count = 0
 
     def __call__(self, instance):    
         score = 0
@@ -156,7 +158,6 @@ class PoolScorer:
         else:
             score = score_candidate(*instance)
         return candidate, score, evidence
-
 
 def find_nuggets(ini, htmls, query_str):
     tmp_folder = ini.get('tmp_folder', './tmp')
@@ -242,10 +243,9 @@ def find_nuggets(ini, htmls, query_str):
 
     searcher = Searcher(search_command, path_to_index,
                                       int(ini.get('evidence_search_passage_count', 10)))
-    p = Pool(8)
+    print 'candidate num:%d' % len(candidates)
     queries = map(lambda candidate: list(parsed_query) + [('NE', candidate[1] )], candidates)
-    evidence_passages_list = p.map(searcher, queries, 50)
-    p.close()
+    evidence_passages_list = fastmap.fastmap(searcher, 10, queries)
     for i in xrange(len(candidates)):
         candidate = candidates[i]
         evidence[candidate[0]] = filter(lambda passage: 
@@ -272,9 +272,8 @@ def find_nuggets(ini, htmls, query_str):
                                    #evidence[candidate]) )
 
     pool_scorer = PoolScorer(ini)
-    p = Pool(8)
-    scorerd_candidates = p.map(pool_scorer, map(lambda candidate: (candidate, evidence[candidate], main_evidence[candidate], parsed_query), evidence.keys()))
-    p.close()
+    inputs = map(lambda candidate: (candidate, evidence[candidate], main_evidence[candidate], parsed_query), evidence.keys())
+    scored_candidates = fastmap.fastmap(pool_scorer, 10, inputs)
 
     ####
     # clean up
