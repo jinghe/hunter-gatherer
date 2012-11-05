@@ -80,7 +80,8 @@ if __name__ == '__main__':
             conn.commit()
 
         (results, html_urls) = one_click_search(ini, query_str, [(1000, 'DESKTOP'), (280, 'MOBILE')])
-        for (output, result) in [(output_desktop, results['DESKTOP']), (output_mobile, results['MOBILE'])]:
+        for (output_file, result) in [(output_file_desktop, results['DESKTOP']), (output_file_mobile, results['MOBILE'])]:
+            output = file(output_file, 'a')
             output.write('%s\tOUT\t%s\n' % (query_id, re.sub('\n', ' ', result[0])))
             printed = set()
             for evidence in result[1]:
@@ -91,5 +92,4 @@ if __name__ == '__main__':
                     output.write('%s\tSOURCE\t%s\n' % (query_id, url))
                     printed.add(evidence)
 
-    output_desktop.close()
-    output_mobile.close()
+            output.close()
