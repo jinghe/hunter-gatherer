@@ -15,6 +15,7 @@ def get_type_features(candidate):
         features[1] = 1
     else:
         features[2] = 1
+    return features
 
 def get_main_evidence_features(main_evidence):
     score = 1.0
@@ -32,10 +33,10 @@ def get_evidence_features(evidence):
 
 def get_idf_features(dumpindex_command, index_path, candidate):
     features = []
-    tokens_string = ' '.join(candidate[1])
+    tokens_string = candidate
     search_patterns = [''"#1(%s)"'', ''"#urd8(%s)"'', ''"#band(%s)"'']
     for search_pattern in search_patterns:
-        command = [dumpindex_command, index_path, 'dx', search_pattern % tokens_string]
+        command = [dumpindex_command, index_path, 'xcount', search_pattern % tokens_string]
         p = subprocess.Popen(command, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
         line = p.stdout.readline().strip()
         pos = line.rfind(':')
@@ -47,16 +48,23 @@ def get_idf_features(dumpindex_command, index_path, candidate):
 
 def extract_candidate_features(candidate, evidence, main_evidence, query, dumpindex_command, term_stat_index):
     features = [];
-    features = get_type_features(candidate) + get_main_evidence_features(main_evidence) + get_evidence_features(evidence) + get_idf_features(dumpindex_command, term_stat_index, candidate) 
+    features = get_type_features(candidate) + get_main_evidence_features(main_evidence) + get_evidence_features(evidence) + get_idf_features(dumpindex_command, term_stat_index, candidate)
+    return features
 
 class CandidateScorer:
-    def __init__(ini): 
+    def __init__(self, ini): 
         self.dumpindex_command = ini.get('dumpindex_command', 'dumpindex')
         self.stat_index = ini.get('stat_index')
-        self.score_model = self.load_model(ini.get('score_model'))
+        #self.score_model = self.load_model(ini.get('score_model'))
 
-    def score(candidate, evidence, main_evidence, query):
+    def score(self, candidate, evidence, main_evidence, query):
         features = extract_candidate_features(candidate, evidence, main_evidence, query, self.dumpindex_command, self.stat_index)
+
+        print candidate, features
+        if features[6] == 0.0:
+            return 0.0
+        return features[0] * 0.5 + features[1] * 0.5 + features[2] * 0.5 + \
+                 (features[3] + features[5]) /  features[6] #((features[6] + features[7] + features[8]) / 3. + 0.000001) # evidence times IDF
         
         #TODO: add real score code
 
