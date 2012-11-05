@@ -2,6 +2,7 @@ import os
 import sys
 import re
 import nltk
+import tempfile
 
 from operator import itemgetter
 
@@ -11,6 +12,8 @@ from web_search import web_search
 import parser
 import html_to_trec
 import nugget_finder
+
+USE_ILP = True
 
 def query_web_search(query_str, ini):
     cache_folder = ini.get('cache_folder', ini.get('tmp_folder', './tmp') + "/cache")
@@ -52,6 +55,128 @@ def score_passages(passages, scored_candidates):
 
     return final_passages
 
+def clean_passage_text(text):
+    """Remove URLs and other extraneous texts."""
+    text = re.sub('http\:\/\/[a-zA-Z0-9\/\.\-\&\_\%\+]+', '', text)
+    text = re.sub('\s+', ' ', text)
+    text = re.sub('\<\/TITLE\>', ' ', text)
+    raw_tokens = text.split(' ')
+    raw_tokens = filter(lambda token: len(token) < 26, raw_tokens)
+
+    return (' '.join(raw_tokens)).strip()
+
+def assemble_output_ilp(final_passages, scored_candidates, final_length):
+    import glpk
+
+    ####
+    # Clean passage text and get final length per sentence.
+    #
+    sentences = list()
+    seen = set()
+    for passage in final_passages:
+        for chunk in passage[1].split(' .'):
+            chunk_sentences = nltk.sent_tokenize(chunk)
+            
+            for sentence in chunk_sentences:
+                clean_text = clean_passage_text(sentence)
+                if clean_text in seen:
+                    continue
+                if len(clean_text) > 20:
+                    if not clean_text[-1] in [ '.', '!', '?' ]:
+                        clean_text += '.'
+                    sentences.append( ( clean_text, len(clean_text) + 1, passage[0]['document'] ) )
+                    seen.add(clean_text)
+                
+    ####
+    # Check which candidates appear in which sentences
+    #
+    candidate_per_sentence = set() # string '%d-%d' candidate-sentence
+    candidate_scores = list()
+    for cand_idx in xrange(len(scored_candidates)):
+        candidate_text = scored_candidates[cand_idx][0]
+        candidate_scores.append(scored_candidates[cand_idx][1])
+
+        for sent_idx in xrange(len(sentences)):
+            if candidate_text in sentences[sent_idx][0]:
+                candidate_per_sentence.add( '%d-%d' % (cand_idx, sent_idx) )
+
+    ####
+    # Build ILP model
+    #
+    f = tempfile.NamedTemporaryFile(delete=False, suffix='.mod')
+    f.write('param NS;\n')
+    f.write('param NC;\n')
+    f.write('param K;\n')
+    f.write('param M{1..NS, 1..NC}, binary;\n')
+    f.write('param L{1..NS}, integer;\n')
+    f.write('param W{1..NC} ;\n')
+    f.write('\n')
+    
+    f.write('var s{1..NS}, binary;\n')
+    f.write('var e{1..NC}, binary;\n')
+    f.write('\n')
+
+    f.write('maximize z: sum { i in 1..NC } e[i]*W[i];\n');
+    f.write('\n')
+    
+    f.write('subject to l:\n')
+    f.write('  sum { i in 1..NS } L[i]*s[i] <= K;\n')
+    f.write('\n')
+    
+    f.write('subject to m {j in 1..NC}:\n')
+    f.write('  sum { i in 1..NS } M[i,j]*s[i] >= e[j];\n')
+    f.write('\n')
+
+    f.write('data;\n')
+    f.write('param NS := %d;\n' % (len(sentences),))
+    f.write('param NC := %d;\n' % (len(candidate_scores),))
+    f.write('param K := %d;\n' % (final_length,))
+    f.write('param L :=')
+    for sent_idx in xrange(len(sentences)):
+        if sent_idx > 0:
+            f.write(',')
+        f.write(' [%d] %d' % (sent_idx + 1, sentences[sent_idx][1]))
+    f.write(';\n')
+    
+    f.write('param M :=')
+    for sent_idx in xrange(len(sentences)):
+        f.write('\n');
+        for cand_idx in xrange(len(scored_candidates)):
+            f.write('[%d,%d] ' % (sent_idx+1, cand_idx+1,))
+            if '%d-%d' % (cand_idx, sent_idx) in candidate_per_sentence:
+                f.write(' 1 ')
+            else:
+                f.write(' 0 ')
+    f.write(';\n')
+
+    f.write('param W :=')
+    for cand_idx in xrange(len(scored_candidates)):
+        f.write(' [%d] %f' % (cand_idx+1, candidate_scores[cand_idx]))
+    f.write(';\n')
+    f.write('end;\n')
+    f.close()
+
+    constraints = glpk.glpk(f.name)
+    constraints.update()
+    constraints.solve()
+    #print constraints.solution()
+    #print constraints.s
+
+    # take selected sentences
+    output = ""
+    evidence = list()
+    for sent_idx in xrange(len(sentences)):
+        if constraints.s[sent_idx+1].value() == 1.0:
+            output = "%s %s" % (output, sentences[sent_idx][0])
+            evidence.append(sentences[sent_idx][1])
+
+    output = output.strip()
+
+    os.unlink(f.name)
+    
+    return (output, evidence)
+
+
 def assemble_output(final_passages_scored, final_length):
     bigrams_cache = dict()
     
@@ -80,16 +205,6 @@ def assemble_output(final_passages_scored, final_length):
         else:
             bigrams_cache[new] = new_tokens
             return False
-
-    def clean_text(text):
-        """Remove URLs and other extraneous texts."""
-        text = re.sub('http\:\/\/[a-zA-Z0-9\/\.\-\&\_\%\+]+', '', text)
-        text = re.sub('\s+', ' ', text)
-        text = re.sub('\<\/TITLE\>', ' ', text)
-        raw_tokens = text.split(' ')
-        raw_tokens = filter(lambda token: len(token) < 26, raw_tokens)
-
-        return (' '.join(raw_tokens)).strip()
     
     # while output is less than final length, accummulate
     output = ""
@@ -97,7 +212,7 @@ def assemble_output(final_passages_scored, final_length):
     taken = list()
     evidence = list()
     while len(output) < final_length and idx < len(final_passages_scored):
-        passage_text = clean_text(final_passages_scored[idx][0][1])
+        passage_text = clean_passage_text(final_passages_scored[idx][0][1])
         tokens = nltk.word_tokenize(passage_text)
 
         if len(tokens) == 0:
@@ -142,6 +257,11 @@ def one_click_search(ini, query_str, outputs):
     if bool(ini.get('condition_candidate_scorer', '')):
         nugget_finder.USE_CANDIDATE_SCORER = True
 
+    if bool(ini.get('condition_no_ilp', '')):
+        USE_ILP = False
+    else:
+        USE_ILP = True
+
     ####
     # fetch results from Web search engine (or cache)
     #
@@ -154,19 +274,28 @@ def one_click_search(ini, query_str, outputs):
     (scored_candidates, parsed_query, path_to_index) = find_nuggets(ini, htmls, query_str)
 
     ####
-    # score final passages
+    # final output
     #
     final_passages = do_search(parsed_query, ini.get('search_command', './cpp/Search'),
                                path_to_index, int(ini.get('main_search_passage_count', 3)))
-    final_passages_scored = score_passages(final_passages, scored_candidates)
-    
-    ####
-    # assemble final output
-    #
     results = {}
+    if USE_ILP:
+        ####
+        # assemble final output
+        #
+        for (final_length, output_type) in outputs:
+            results[output_type] = assemble_output_ilp(final_passages, scored_candidates, final_length)
+    else:
+        ####
+        # score final passages
+        #
+        final_passages_scored = score_passages(final_passages, scored_candidates)
 
-    for (final_length, output_type) in outputs:
-        results[output_type] = assemble_output(final_passages_scored, final_length)
+        ####
+        # assemble final output
+        #
+        for (final_length, output_type) in outputs:
+            results[output_type] = assemble_output(final_passages_scored, final_length)
     
     return (results, html_urls)
 

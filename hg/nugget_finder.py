@@ -156,7 +156,7 @@ class PoolScorer:
         if USE_CANDIDATE_SCORER:
             score = self.scorer.score(*instance)
         else:
-            score = score_candidate(*instance)
+            score = score_candidate(candidate, evidence, main_evidence, parsed_query)
         return candidate, score, evidence
 
 def find_nuggets(ini, htmls, query_str):
@@ -257,24 +257,20 @@ def find_nuggets(ini, htmls, query_str):
     #
     sys.stderr.write("Evaluating evidence...\n")
     scored_candidates = list()
-    #if USE_CANDIDATE_SCORER:
-        #scorer = CandidateScorer(ini)
-    #for candidate in evidence:
-        #scored_candidates.append( (candidate,
-                                   #scorer.score(candidate,
-                                                #evidence[candidate],
-                                                #main_evidence[candidate],
-                                                #parsed_query) if USE_CANDIDATE_SCORER else \
-                                   #score_candidate(candidate,
-                                                #evidence[candidate],
-                                                #main_evidence[candidate],
-                                                #parsed_query),
-                                   #evidence[candidate]) )
 
-    pool_scorer = PoolScorer(ini)
-    inputs = map(lambda candidate: (candidate, evidence[candidate], main_evidence[candidate], parsed_query), evidence.keys())
-    scored_candidates = fastmap.fastmap(pool_scorer, 10, inputs)
-
+    if USE_CANDIDATE_SCORER: 
+        pool_scorer = PoolScorer(ini)
+        p = Pool(8)
+        scorerd_candidates = fastmap.fastmap(pool_scorer, map(lambda candidate: (candidate, evidence[candidate], main_evidence[candidate], parsed_query), evidence.keys()))
+        p.close()
+    else:
+        for candidate in evidence:
+            scored_candidates.append( (candidate,
+                                       score_candidate(candidate,
+                                                       evidence[candidate],
+                                                       main_evidence[candidate],
+                                                       parsed_query),
+                                       evidence[candidate]) )
     ####
     # clean up
     #
@@ -288,7 +284,7 @@ def find_nuggets(ini, htmls, query_str):
     ####
     # show candidates
     #
-    if True:
+    if False:
         scored_candidates.sort(key=itemgetter(1), reverse=True)
         rank = 0;
         for candidate_score in scored_candidates:
