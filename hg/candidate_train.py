@@ -14,10 +14,8 @@ from sklearn import ensemble
 
 from IndriIndex import retrieve, Index
 from Corpus import TRECWriter, Document
-from nugget_finder import load_ini, do_search, identify_candidates
 import nugget_finder
 from web_search import web_search
-from one_click_search import query_web_search
 from html_to_trec import detag_html_file
 from parser import parse_into_chunks
 import parser
@@ -135,6 +133,8 @@ class Searcher:
         self.ret_size = ret_size
 
     def __call__(self, query):
+        from nugget_finder import load_ini, do_search, identify_candidates
+        
         return do_search(query, self.search_command, self.index_path, self.ret_size)
 
 class TrainGenerator:
@@ -150,6 +150,8 @@ class TrainGenerator:
 
 
 def gen_nugget_train(ini, htmls, query_str, good_text):
+    from nugget_finder import load_ini, do_search, identify_candidates
+    
     tmp_folder = ini.get('tmp_folder', './tmp')
     good_text = good_text.lower()
 
@@ -263,6 +265,9 @@ def gen_nugget_train(ini, htmls, query_str, good_text):
 
 
 def do_gen_nugget_train(ini_path):
+    from nugget_finder import load_ini, do_search, identify_candidates
+    from one_click_search import query_web_search
+    
     ini = load_ini(ini_path)
     nugget_finder.USE_PATTERNS = True
     if bool(ini.get('condition_no_cclparser', '')) or \
