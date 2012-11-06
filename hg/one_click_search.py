@@ -168,7 +168,7 @@ def assemble_output_ilp(final_passages, scored_candidates, final_length):
     for sent_idx in xrange(len(sentences)):
         if constraints.s[sent_idx+1].value() == 1.0:
             output = "%s %s" % (output, sentences[sent_idx][0])
-            evidence.append(sentences[sent_idx][1])
+            evidence.append(sentences[sent_idx][2])
 
     output = output.strip()
 
