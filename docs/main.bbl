@@ -1,0 +1,44 @@
+\begin{thebibliography}{1}
+
+\bibitem{ferrucci_etal_AI10}
+Ferrucci, D., Brown, E., Chu-Carroll, J., Fan, J., Gondek, D., Kalyanpur, A.A.,
+  Lally, A., Murdock, J.W., Nyberg, E., Prager, J.,  et~al.:
+\newblock Building watson: An overview of the deepqa project.
+\newblock AI magazine \textbf{31}(3) (2010)  59--79
+
+\bibitem{seginer_etal_ACL07}
+Seginer, Y.:
+\newblock Fast unsupervised incremental parsing.
+\newblock In: ANNUAL MEETING-ASSOCIATION FOR COMPUTATIONAL LINGUISTICS.
+  Volume~45. (2007)  384
+
+\bibitem{strohman_ICIA2005}
+Strohman, T., Metzler, D., Turtle, H., Croft, W.B.:
+\newblock Indri: A language model-based search engine for complex queries.
+\newblock In: Proceedings of the International Conference on Intelligent
+  Analysis. Volume~2., Citeseer (2005)  2--6
+
+\bibitem{mccallum_02}
+McCallum, A.K.:
+\newblock Mallet: A machine learning for language toolkit.
+\newblock (2002)
+
+\bibitem{Lafferty_etal_ICML01}
+Lafferty, J.D., McCallum, A., Pereira, F.C.N.:
+\newblock Conditional random fields: Probabilistic models for segmenting and
+  labeling sequence data.
+\newblock In: ICML. (2001)  282--289
+
+\bibitem{Li_etal_NIPS07}
+Li, P., Burges, C.J.C., Wu, Q.:
+\newblock Mcrank: Learning to rank using multiple classification and gradient
+  boosting.
+\newblock In: NIPS. (2007)
+
+\bibitem{McDonald_ECIR07}
+McDonald, R.T.:
+\newblock A study of global inference algorithms in multi-document
+  summarization.
+\newblock In: ECIR. (2007)  557--564
+
+\end{thebibliography}
