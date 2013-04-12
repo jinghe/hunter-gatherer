@@ -1,4 +1,3 @@
-
 \section{Introduction}
 
 % 1Click Task
@@ -7,7 +6,44 @@ Most existing IR techniques consider the relevant information at document levels
 Alternatively, 1Click search defines the information retrieval task in a finer granularity, i.e., information units (iUnits).
 In particular, it requires systems to return short answering text that contains these relevant information units.
 
-\missing{example queries, example iUnits}
+\missing{example queries, example iUnits, Figure~\ref{fig:example}}
+
+\missing{1-Click Search Input: Query and 200 ranked Web pages}
+
+\missing{Output: a 1,000 characters summary}
+
+\missing{Summary should contain the information the pages relevant to the query.}
+
+\missing{A research challenge part of NTICR Queries belong to 8 types (celebrities, how to, location, etc), but the type is not explicit}
+
+\begin{figure}
+\begin{tabular}{ll}
+\textbf{Query:} & \texttt{Whitney Houston Death} \\
+& \\
+\textbf{Relevant information:} & 
+  \begin{minipage}{10cm}\textit{On February 11, 2012, Houston was found dead 
+  in suite 434 at the Beverly Hilton Hotel, submerged in the bathtub. } \end{minipage} \\
+& \\
+ & \begin{tabular}{ll}
+V001001 &February 11, 2012\\
+V001002 &Beverly Hilton Hotel\\
+V001003 &suite 434 \\
+V001004 &submerged in the bathtub
+\end{tabular}\\
+& \\
+& \begin{minipage}{10cm}\textit{the cause of Houston's death was drowning and 
+  the "effects of atherosclerotic heart disease and cocaine use".}  \end{minipage} \\
+& \\
+ & \begin{tabular}{ll}
+    V002001 &drowning\\
+    V002002 &atherosclerotic heart disease\\
+    V002003 &cocaine
+\end{tabular}\\
+\end{tabular}
+\caption{Query Example.}
+\label{fig:example}
+\end{figure}
+
 
 % Motivation: DeepQA for 1Click Task
 In this work, we inspire ourselves on the DeepQA framework looking to adapt it for the 1Click task.
