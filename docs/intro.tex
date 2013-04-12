@@ -1,0 +1,35 @@
+
+\section{Introduction}
+
+% 1Click Task
+Information retrieval (IR) aims to find relevant information for information needs.
+Most existing IR techniques consider the relevant information at document levels and rank documents according to their relevance to users' queries.
+Alternatively, 1Click search defines the information retrieval task in a finer granularity, i.e., information units (iUnits).
+In particular, it requires systems to return short answering text that contains these relevant information units.
+
+\missing{example queries, example iUnits}
+
+% Motivation: DeepQA for 1Click Task
+In this work, we inspire ourselves on the DeepQA framework looking to adapt it for the 1Click task.
+DeepQA framework has been successfully used in IBM Watson QA system for both Jeopardy Challenge and TREC QA task \cite{ferrucci_etal_AI10}.
+Generally, 1Click task is different from QA task, because it usually does not contain question word (except queries in QA category) and it is usually more general than a question.
+However, they both heavily rely on the search component, and they both need to score and organize the information candidates (iUnits in 1Click task and relevant nuggets in QA literatures).
+The advantage of DeepQA framework is that it can integrate a large number of knowledge learnt by diverse techniques to improve the answering performance.
+
+\missing{Say something in the lines that we wanted to simplify DeepQA and apply the same approach without query type identification}
+
+
+% Framework
+The main idea of DeepQA framework is that each component is responsible for generating knowledge and corresponding confidence about the answer, and then we need to integrate these information to get the final result.
+There are three main components in the framework:
+
+\begin{itemize}
+\item Candidate Generation: generate candidate iUnits for a specific query
+\item Candidate Scoring: we can score candidate iUnits according to its features such as type, evidence strength, etc.
+\item Candidate Organization: organize the candidate in a piece of compact text
+\end{itemize}
+
+\missing{Architecture figure}
+
+In the following three sections, we will describe Hunter Gatherer system\footnote{Source code for Hunter-Gatherer is available at \url{https://github.com/jinghe/hunter-gatherer}} in detail.
+
