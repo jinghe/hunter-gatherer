@@ -33,5 +33,10 @@ subject to l: sum { i in 1..NS } L[i]*s[i] <= K; 
 subject to m {j in 1..NC}:  sum { i in 1..NS } M[i,j]*s[i] >= e[j];
 \end{verbatim}
 
-\missing{Duplicate detection}
+Using ILP produced the best results in our test runs, but we submitted
+also runs without using ILP due to time execution limitations. In such
+runs we realized duplicate passages where a big issue. We thus
+filtered using a bigram model and compute a distance between sentences
+as the Jaccard distance \cite{Jaccard} between their bigrams, when
+taken as a set.
 
