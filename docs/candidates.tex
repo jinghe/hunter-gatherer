@@ -12,7 +12,26 @@ overall relevance information can be estimated by the sum of relevance
 score from the non-redundant iUnits.  Thus, this problem is casted as
 an Integer Linear Programming problem \cite{McDonald_ECIR07}.
 
-\missing{Explain ILP \cite{Makhorin/00/GLPK}}
+We express selection of sentences as an optimization problem. Given
+$NC$ nuggets (our candidates) and $NS$ sentences, where some sentences
+contain some nuggets (expressed as a binary matrix $M$) and each
+nugget has an score (expressed by the vector $W$), we want to select
+sentences up to a certain length (the length of each sentence is
+contained in the vector $L$) so to maximize the scores of the
+contained nuggets, which in GLPK \cite{Makhorin/00/GLPK} is expressed as:
+
+\begin{verbatim}
+param NS; param NC; param K;  
+param M{1..NS, 1..NC}, binary; 
+param L{1..NS}, integer; 
+param W{1..NC}; 
+
+var s{1..NS}, binary; 
+var e{1..NC}, binary; 
+maximize z: sum { i in 1..NC } e[i]*W[i]; 
+subject to l: sum { i in 1..NS } L[i]*s[i] <= K; 
+subject to m {j in 1..NC}:  sum { i in 1..NS } M[i,j]*s[i] >= e[j];
+\end{verbatim}
 
 \missing{Duplicate detection}
 
