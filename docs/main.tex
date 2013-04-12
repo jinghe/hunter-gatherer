@@ -36,96 +36,10 @@
 \newcommand\missing[1]{$\left[\right.$Missing: \textit{#1}\,$\left.\right]$}
 
 \input{intro}
-
-\section{Hunter: Candidate Generation}
-1Click is evaluated based on the iUnits in the return text, so the main task is to detect the relevant iUnits.
-However, it is difficult to determine the relevance between queries and iUnits directly.
-Thus we consider the relation between iUnits and queries in the context of passages.
-In particular, we need to identify candidate iUnits from query relevant passages, and we also need to use passages that contain both the query and the candidate iUnit as evidence to estimate the reliability of each candidate iUnit.
-
-In the component of candidate generation, we first identify possible relevant iUnits as candidates for a specific query.
-
-% primary search
-Generally, relevant iUnits should appear in relevant passages, so we need to acquire relevant passages by main search.
-In main search, we first identify the phrases in the original query. 
-Specifically, we use NTLK named entity recognizer to identify the named entities in the query, and use CCL parser \cite{seginer_etal_ACL07} to identify potential phrases.
-If a phrase is an named entity, we require the words to appear in the exact order in the passages;
-If a phrase is a CCL parser chunk, it poses more weight on the phrase that the words appear in the same order as in the query. 
-The rebuilt query is represented in Indri query language \cite{strohman_ICIA2005}, each token and phrases are connected by the ``combine'' operator.
-The details are presented in Table~\ref{table:query}.
-For example, for the query ``Whitney Houston death'', we can get the token ``death'' and named entity ``Whitney Houston'' after parsing the query, so the Indri query can be expressed as ``\#combine[passage100:50](\#1(Whitney Houston) death)'', where we set retrieved passage length as 100 and overlap between candidate passages as 50.
-
-\begin{table}
-\caption{Indri Query Setting}
-\label{table:query}
-
-\centering
-\begin{tabular}{|l|l|l|}
-\hline
-\bf{Text} & \bf{Query} & \bf{Phrase Type} \\
-\hline
-\hline
-A B & \#1(A B) & named entity \\
-\hline
-A B & \#combine(0.5 \#1(A B)  & CCL parser chunks \\
-    & \ \ \ \ \ \ 0.5 \#combine(A B))     & pattern phrases \\
-\hline
-
-\end{tabular}
-
-\end{table}
-
-
-
-% candidate generation
-The highly ranked passages of ``main search''  are likely to be relevant to the query, and we detect candidate iUnits from a relevant passage pool containing top K passages.
-In this stage, we pursue high recall of iUnits, so a large number of candidate iUnits are kept.
-We expect most of irrelevant iUnits can be filtered by the candidate scoring component.
-We first treat tokens and named entities appearing in the passage pool as candidate iUnits, but they cannot cover some phrase based iUnits.
-To address this problem, we use two methods to detect phrase based iUnits.
-
-% CCL Parser
-The first method makes use of a parser to analyze the syntactic structure of a sentence, and then treat the chunks produced by the parser as the candidate iUnits.
-Specifically, we use CCL Parser \cite{seginer_etal_ACL07} for its simplicity. This parser does not need manual created training data, and both learning and parser are local and fast. In addition, it does not need part-of-speech tags for parsing. It fits our task because we only need chunks of words rather than their POS information.
-
-% Wikipedia IE
-We also consider to extract some ``key information'' from the retrieval passages as candidate iUnits.
-For example, for some queries about persons or locations, their properties such as career and birthday can be considered as ``key information''.
-To extract such information, we need to a training data containing labels about these information, and learn an extractor based on some training data.
-In our work, we simply consider the infobox in Wikipedia pages as ``key information'', and we can get the training data by matching the infobox property text with the corresponding Wikipedia article.
-We use mallet \cite{mccallum_02} to train a CRF model \cite{Lafferty_etal_ICML01} for the extraction purpose.
-
-\section{Gatherer: Candidate Scoring}
-In this section, we will introduce the Candidate scoring component.
-In this component, we first gather the evidence for each candidate iUnit, and then integrate the evidence information to score the iUnit.
-
-We use evidence search to gather evidence information for each candidate iUnit.
-In this step, we construct a new Indri language query containing both original query and iUnit.
-The original query part was built in the same way as described in the main search.
-For an iUnit, it can be a token, a named entity, a CCL parser chunk or a pattern based phrase extracted by CRF model.
-The query is created according to the rules defined in Table~\ref{table:query}.
-Then the query is submitted to the Indri search engine and get a list of evidence passages.
-For the query ''Whitney Houston death'', we can get candidate iUnits such as ``Beverly Hilton Hotel''. 
-In this step, we need to get evidence by search the query containing original query and iUnit information.
-For the iUnit ``Beverly Hilton Hotel'', our system can find that it is a named entity again, so the evidence search query is built as ``\#combine[passage100:50](\#1(Whitney Houston) \#1(Beverly Hilton Hotel) death)''.
-
-For a candidate iUnit with the corresponding passages acquired from main search and evidence search, it can be scored by integrating these information.
-Intuitively, an iUnit should be more likely to be relevant if it appears in many high relevant passages in the main search, and there are many high relevant evidence passages to support it.
-Therefore, we can define a heuristic method to measure the relevance of an iUnit as follows:
-\begin{equation}
-R(q,u)= \lambda_1 \cdot \sum_{p\in MS, u\in p}{R(q,p) + \alpha} + \lambda_2 \cdot \sum_{p\in ES}{R(q,p) + \beta}
-\end{equation}
-where $q$,$u$ and $p$ represent a query, an iUnit and a passage respectively, $R(q,p)$ is the relevance score for passage $p$ according to query $q$, $MS$ is the passage set from the main search and $ES$ is the passage set from the evidence search. $\lambda_1$, $\lambda_2$, $\alpha$ and $\beta$ are free parameters to control the importance of each components.
-
-More sophisticated, we can integrate the above features in a learning framework.
-If we have a set of (query, iUnits) pairs, in which each iUnit is relevant to the query, we can learn a iUnit ranking model.
-However, since this is the first year for 1Click English task, no training data is available. 
-Alternatively, we select 60 Wikipedia articles as the training data, in which the title is treated as the query, and iUnits in the fist paragraph are treated relevant iUnits. 
-Besides, for each query in this training data set, we also need passages from main search and evidence search to extract required features, and some irrelevant iUnits as negative examples.
-In this work, we use ClueWeb09 dataset for both main search and evidence search, and other candidate iUnits from the main search are treated as irrelevant iUnits.
-Given the training data, we learn an iUnit ranking model with gradient boosting tree method \cite{Li_etal_NIPS07}. 
-
+\input{hunter}
+\input{gatherer}
 \input{candidates}
+\input{outro}
 
 \bibliographystyle{splncs}
 \bibliography{main}

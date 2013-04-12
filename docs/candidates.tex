@@ -5,8 +5,14 @@ of a list of relevant iUnits.  Given the limited length of the text,
 it is still challengeable to contain these iUnits.  Each sentence from
 the main search can be considered as a candidate for the final output,
 and we need to maximize the overall relevance information within the
-length constraint.  The overall relevance information can be estimated
-by the sum of relevance score from the non-redundant iUnits.  Thus,
-this problem is casted as an Integer Linear Programming problem
-\cite{McDonald_ECIR07}.
+length constraint.  In an ideal setting, given some training output,
+we could have used supervised learning to determine the best target
+sentences \cite{Gondek_al:12}. Without training data, however, the
+overall relevance information can be estimated by the sum of relevance
+score from the non-redundant iUnits.  Thus, this problem is casted as
+an Integer Linear Programming problem \cite{McDonald_ECIR07}.
+
+\missing{Explain ILP \cite{Makhorin/00/GLPK}}
+
+\missing{Duplicate detection}
 

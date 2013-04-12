@@ -1,0 +1,34 @@
+\section{Gatherer: Candidate Scoring}
+In this section, we will introduce the Candidate scoring component.
+In this component, we first gather the evidence for each candidate iUnit, and then integrate the evidence information to score the iUnit.
+
+We use evidence search to gather evidence information for each candidate iUnit.
+In this step, we construct a new Indri language query containing both original query and iUnit.
+The original query part was built in the same way as described in the main search.
+For an iUnit, it can be a token, a named entity, a CCL parser chunk or a pattern based phrase extracted by CRF model.
+The query is created according to the rules defined in Table~\ref{table:query}.
+Then the query is submitted to the Indri search engine and get a list of evidence passages.
+For the query ''Whitney Houston death'', we can get candidate iUnits such as ``Beverly Hilton Hotel''. 
+In this step, we need to get evidence by search the query containing original query and iUnit information.
+For the iUnit ``Beverly Hilton Hotel'', our system can find that it is a named entity again, so the evidence search query is built as 
+
+\begin{center}
+\#combine[passage100:50](\#1(Whitney Houston) \#1(Beverly Hilton Hotel) death)
+\end{center}
+
+For a candidate iUnit with the corresponding passages acquired from main search and evidence search, it can be scored by integrating these information.
+Intuitively, an iUnit should be more likely to be relevant if it appears in many high relevant passages in the main search, and there are many high relevant evidence passages to support it.
+Therefore, we can define a heuristic method to measure the relevance of an iUnit as follows:
+\begin{equation}
+R(q,u)= \lambda_1 \cdot \sum_{p\in MS, u\in p}{R(q,p) + \alpha} + \lambda_2 \cdot \sum_{p\in ES}{R(q,p) + \beta}
+\end{equation}
+where $q$,$u$ and $p$ represent a query, an iUnit and a passage respectively, $R(q,p)$ is the relevance score for passage $p$ according to query $q$, $MS$ is the passage set from the main search and $ES$ is the passage set from the evidence search. $\lambda_1$, $\lambda_2$, $\alpha$ and $\beta$ are free parameters to control the importance of each components.
+
+In a more sophisticated manner, we can integrate the above features in a learning framework.
+If we have a set of (query, iUnits) pairs, in which each iUnit is relevant to the query, we can learn a iUnit ranking model.
+However, since this is the first year for 1Click English task, no training data is available. 
+Alternatively, we select 60 Wikipedia articles as the training data, in which the title is treated as the query, and iUnits in the fist paragraph are treated relevant iUnits. 
+Besides, for each query in this training data set, we also need passages from main search and evidence search to extract required features, and some irrelevant iUnits as negative examples.
+In this work, we use ClueWeb09 dataset for both main search and evidence search, and other candidate iUnits from the main search are treated as irrelevant iUnits.
+Given the training data, we learn an iUnit ranking model with gradient boosting tree method \cite{Li_etal_NIPS07}. 
+
