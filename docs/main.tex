@@ -147,14 +147,7 @@ Besides, for each query in this training data set, we also need passages from ma
 In this work, we use ClueWeb09 dataset for both main search and evidence search, and other candidate iUnits from the main search are treated as irrelevant iUnits.
 Given the training data, we learn an iUnit ranking model with gradient boosting tree method \cite{Li_etal_NIPS07}. 
 
-
-\section{Candidate Organization}
-The required output of 1Click task is a compact piece of text instead of a list of relevant iUnits.
-Given the limited length of the text, it is still challengeable to contain these iUnits.
-Each sentence from the main search can be considered as a candidate for the final output, and we need to maximize the overall relevance information within the length constraint.
-The overall relevance information can be estimated by the sum of relevance score from the non-redundant iUnits. 
-Thus, this problem is casted as an Integer Linear Programming problem \cite{McDonald_ECIR07}.
-
+\input{candidates}
 
 \bibliographystyle{splncs}
 %\bibliography{C:/Users/Administrator/Dropbox/util/my_bib/hj}
