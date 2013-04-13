@@ -1,26 +1,40 @@
 \section{Hunter: Candidate Generation}
-1Click is evaluated based on the iUnits in the return text, so the main task is to detect the relevant iUnits.
-However, it is difficult to determine the relevance between queries and iUnits directly.
-Thus we consider the relation between iUnits and queries in the context of passages.
-In particular, we need to identify candidate iUnits from query relevant passages,\footnote{\missing{In our work passages are \ldots}} and we also need to use passages that contain both the query and the candidate iUnit as evidence to estimate the reliability of each candidate iUnit. \missing{this sentence needs rewriting:} We took the passages as they were returned by the search component, i.e., no attempt was made to further qualify them based on their goodness-of-fit to the query-as-a-question \cite{conf/cikm/KrikonCK12} or their perceived relevance when shown to the user as a snippet \cite{he-duboue-nie:2012:PAPERS}.
+1Click is evaluated based on the iUnits in the return text, so the
+main task is to detect the relevant iUnits. However, it is difficult
+to determine the relevance between queries and iUnits directly. Thus
+we consider the relation between iUnits and queries in the context
+of passages. In particular, we need to identify candidate iUnits
+from query relevant passages, \footnote{In our work passages are
+simply defined as overlapped fixed windows in documents, since it
+shows that retrieval on fixed length passages can usually perform
+better than retrieval on semantic units such as paragraphs
+\cite{Callan_SIGIR94,Zobel_etal_IPM95}. We empirically set the
+passage length as 120 terms, and overlapping length as 50 terms in
+this work.} and and we also need to use passages that contain both
+the query and the candidate iUnit as evidence to estimate the
+reliability of each candidate iUnit. We took the passages as they
+were returned by the search component, i.e., no attempt was made to
+further qualify them as answer-bearing passages
+\cite{conf/cikm/KrikonCK12} or their perceived relevance
+\cite{he-duboue-nie:2012:PAPERS}.
 
 In the component of candidate generation, we first identify possible relevant iUnits as candidates for a specific query.
 
 % primary search
 Generally, relevant iUnits should appear in relevant passages, so we need to acquire relevant passages by main search.
-In main search, we first identify the phrases in the original query. 
+In main search, we first identify the phrases in the original query.
 Specifically, we use NTLK named entity recognizer to identify the named entities in the query (in the terminology of \cite{conf/aaai/Chu-CarrollF11}, we employ only ``document search'' candidates).
 If a phrase is a named entity, we require the words to appear in the exact order in the passages;
-If a phrase is a CCL parser chunk, it poses more weight on the phrase that the words appear in the same order as in the query. 
+If a phrase is a CCL parser chunk, it poses more weight on the phrase that the words appear in the same order as in the query.
 The rebuilt query is represented in Indri query language \cite{strohman_ICIA2005}, each token and phrases are connected by the ``combine'' operator.
 The details are presented in Table~\ref{table:query}.
-For example, for the query ``Whitney Houston death'', we can get the token ``death'' and named entity ``Whitney Houston'' after parsing the query, so the Indri query can be expressed as 
+For example, for the query ``Whitney Houston death'', we can get the token ``death'' and named entity ``Whitney Houston'' after parsing the query, so the Indri query can be expressed as
 
 \begin{center}
-\#combine[passage100:50](\#1(Whitney Houston) death)
+\#combine[passage120:50](\#1(Whitney Houston) death)
 \end{center}
 
-\noindent where we set retrieved passage length as 100 and overlap between candidate passages as 50.
+\noindent where we set retrieved passage length as 120 and overlap between candidate passages as 50.
 
 \begin{table}
 \caption{Indri Query Setting}
