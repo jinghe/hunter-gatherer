@@ -1,10 +1,38 @@
 \section{Final Remarks}
 
-\missing{Spam and meta tags killed us.}
+We submitted four runs in total:
 
-\missing{Breaking apart multi-clause sentences?}
+\begin{description}
 
-\missing{Sentence compression?}
+\item[UDEM-E-D-MAND-1] Basic Desktop Hunter Gatherer: 50 passages in main search, 20 top documents per candidate, 200 documents for evidence search.
 
-\missing{Phrase-based candidate generation using CCLParser
-  \cite{seginer_etal_ACL07}}
+\item[UDEM-E-M-MAND-2] Basic Mobile Hunter Gatherer: same as above, but mobile version.
+
+\item[UDEM-E-D-MAND-3] Wiki Extractors Hunter Gatherer: same as UDEM-E-D-MAND1 but with Wikipedia-trained CRF extractors.
+
+\item[UDEM-E-D-MAND-4] ILP Hunter Gatherer: same as UDEM-E-D-MAND1 but with ILP.
+
+\end{description}
+
+We sadly had no time to do an ILP-based ran for the mobile version nor
+the CRF extractors. 
+
+An after-submission error analysis showed we were negatively affected
+by:
+
+\begin{itemize}
+\item Spam, i.e., sentences and text with the intention to deceive search engines.
+\item Keywords in meta-tags in the head of a page (different from spam itself and easier to filter).
+\item Sentences unusually long but where only small segment was relevant.
+\end{itemize}
+
+All these issues should be addressable with further work. In
+particular, we are interested in exploring breaking apart multi-clause
+sentences leveraging work in text simplification
+\cite{siddharthan2006syntactic} or sentence compression
+\cite{clarke2008global}.
+
+Other aspects we are interested in leveraging in future work is the
+use of unsupervised parsing \cite{seginer_etal_ACL07} for phrase-based
+candidate generation.
+
