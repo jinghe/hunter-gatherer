@@ -16,8 +16,6 @@
 \email{\{dubouep,hejing,nie\}@iro.umontreal.ca}
 }
 
-
-
 \maketitle
 
 %\renewcommand{\baselinestretch}{.962}
@@ -34,6 +32,20 @@
 %This is abstract
 %}
 \newcommand\missing[1]{$\left[\right.$Missing: \textit{#1}\,$\left.\right]$}
+
+\abstract{
+We describe our hunter-gartherer system
+for the NTCIR-10 1CLICK-2 task. 
+We inspire ourselves on the DeepQA framework looking to adapt
+it for the 1Click task.
+Several techniques can be integrated naturally in this framework.
+The hunter component generates candidates based on the passage retrieval for the original query, 
+the gartherer component collects evidence for each candidate and score them based on the collected evidence, 
+and finally a summarization system is utilized to organized the high-quality candidates.
+The evaluation results show the effectiveness of this framework in the 1Click search task.
+}
+
+
 
 \input{intro}
 \input{hunter}
