@@ -1,22 +1,50 @@
 %This is a very basic article template.
 %%There is just one section and two subsections.
-\documentclass{llncs}
+\documentclass{sig-alternate}
 %\usepackage{llncsdoc}
 \usepackage{amsmath}
 %\usepackage[lined, algonl, boxed]{algorithm2e}
 \usepackage{graphicx}
+\usepackage{url}
 %\newtheorem{definition}{Definition}
 %\newtheorem{problem}{Problem}
 
+\makeatletter
+\let\@copyrightspace\relax
+\makeatother
+
+
+
 \begin{document}
 
-\title{Hunter Gatherer: UdeM at 1Click-2}
-\author{Pablo Duboue \and Jing He  \and Jian-Yun Nie}
-\institute{Universit\'{e} de Montr\'{e}al \\
-\email{\{dubouep,hejing,nie\}@iro.umontreal.ca}
+\title{Hunter Gatherer: UdeM at 1CLICK-2}
+
+\numberofauthors{3}
+
+\author{
+\alignauthor
+Pablo Duboue\\
+       \affaddr{Universit\'{e} de Montr\'{e}al, Canada}\\
+       \email{dubouep@iro.umontreal.ca}
+\alignauthor
+Jing He\\
+       \affaddr{Universit\'{e} de Montr\'{e}al, Canada}\\
+       \email{hejing@iro.umontreal.ca}
+\alignauthor
+Jian-Yun Nie\\
+       \affaddr{Universit\'{e} de Montr\'{e}al, Canada}\\
+       \email{nie@iro.umontreal.ca}
 }
 
 \maketitle
+
+\section*{Team Name}
+UdeM
+
+\section*{Subtasks}
+1CLICK-2 English
+
+
 
 %\renewcommand{\baselinestretch}{.962}
 
@@ -37,12 +65,12 @@
 We describe our hunter-gartherer system
 for the NTCIR-10 1CLICK-2 task. 
 We inspire ourselves on the DeepQA framework looking to adapt
-it for the 1Click task.
+it for the 1CLICK task.
 Several techniques can be integrated naturally in this framework.
 The hunter component generates candidates based on the passage retrieval for the original query, 
 the gartherer component collects evidence for each candidate and score them based on the collected evidence, 
 and finally a summarization system is utilized to organized the high-quality candidates.
-The evaluation results show the effectiveness of this framework in the 1Click search task.
+The evaluation results show the effectiveness of this framework in the 1CLICK search task.
 }
 
 
@@ -53,7 +81,7 @@ The evaluation results show the effectiveness of this framework in the 1Click se
 \input{candidates}
 \input{outro}
 
-\bibliographystyle{splncs}
+\bibliographystyle{abbrv}
 \bibliography{main}
 \end{document}
 

@@ -1,24 +1,24 @@
 \section{Introduction}
 
-% 1Click Task
+% 1CLICK Task
 Information retrieval (IR) aims to find relevant information for information needs.
 Most existing IR techniques consider the relevant information at document levels and rank documents according to their relevance to users' queries.
-Alternatively, 1Click search defines the information retrieval task in a finer granularity, i.e., information units (iUnits).
+Alternatively, 1CLICK search \cite{Sakai_etal_NTCIR9,Pavlu_etal_NTCIR10} defines the information retrieval task in a finer granularity, i.e., information units (iUnits).
 In particular, it requires systems to return short answering text that contains these relevant information units. Figure~\ref{fig:example} shows an example query and relevant iUnits, as provided by the organizers. 
 
-\begin{figure}
+\begin{figure*}
 \begin{tabular}{ll}
-\textbf{Query:} & \texttt{Whitney Houston Death} \\
+\textbf{Query:} & \texttt{Whitney Houston Death}\\
 & \\
 \begin{minipage}{2.5cm}\textbf{Relevant\\
-information:}\end{minipage} & 
+information:}\end{minipage}& 
   \begin{minipage}{10cm}\textit{On February 11, 2012, Houston was found dead 
-  in suite 434 at the Beverly Hilton Hotel, submerged in the bathtub. } \end{minipage} \\
+  in suite 434 at the Beverly Hilton Hotel, submerged in the bathtub.} \end{minipage} \\
 & \\
  & \begin{tabular}{ll}
 V001001 &February 11, 2012\\
 V001002 &Beverly Hilton Hotel\\
-V001003 &suite 434 \\
+V001003 &suite 434\\
 V001004 &submerged in the bathtub
 \end{tabular}\\
 & \\
@@ -26,16 +26,16 @@ V001004 &submerged in the bathtub
   the "effects of atherosclerotic heart disease and cocaine use".}  \end{minipage} \\
 & \\
  & \begin{tabular}{ll}
-    V002001 &drowning\\
+   V002001 &drowning\\
     V002002 &atherosclerotic heart disease\\
     V002003 &cocaine
 \end{tabular}\\
 \end{tabular}
 \caption{Query Example.}
 \label{fig:example}
-\end{figure}
+\end{figure*}
 
-The 1Click Task itself involves then, given a query, produce a 1,000
+The 1CLICK Task itself involves then, given a query, produce a 1,000
 characters summary (desktop version) or a 280 characters summary
 (mobile version) that are to be extracted from given 200 ranked pages
 provided by the organizers. The queries themselves belong to 8 known
@@ -43,11 +43,11 @@ query types (celebrities, how to, location, etc), but the type is not
 explicitly stated with the query.
 
 
-% Motivation: DeepQA for 1Click Task
-In this work, we inspire ourselves on the DeepQA framework looking to adapt it for the 1Click task.
+% Motivation: DeepQA for 1CLICK Task
+In this work, we inspire ourselves on the DeepQA framework looking to adapt it for the 1CLICK task.
 DeepQA framework has been successfully used in IBM Watson QA system for both Jeopardy Challenge and TREC QA task \cite{ferrucci_etal_AI10}.
-Generally, 1Click task is different from QA task, because it usually does not contain question word (except queries in QA category) and it is usually more general than a question.
-However, they both heavily rely on the search component, and they both need to score and organize the information candidates (iUnits in 1Click task and relevant nuggets in QA literatures).
+Generally, 1CLICK task is different from QA task, because it usually does not contain question word (except queries in QA category) and it is usually more general than a question.
+However, they both heavily rely on the search component, and they both need to score and organize the information candidates (iUnits in 1CLICK task and relevant nuggets in QA literatures).
 The advantage of DeepQA framework is that it can integrate a large number of knowledge learnt by diverse techniques to improve the answering performance. In our work we wanted to simplify the DeepQA architecture and apply an unified approach without query type identification.
 
 % Framework

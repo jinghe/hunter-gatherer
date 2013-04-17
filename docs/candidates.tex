@@ -1,6 +1,7 @@
 \section{Candidate Organization}
+\label{sec:candidates}
 
-The required output of 1Click task is a compact piece of text instead
+The required output of 1CLICK task is a compact piece of text instead
 of a list of relevant iUnits.  Given the limited length of the text,
 it is still challengeable to contain these iUnits.  Each sentence from
 the main search can be considered as a candidate for the final output,
@@ -21,22 +22,23 @@ contained in the vector $L$) so to maximize the scores of the
 contained nuggets, which in GLPK \cite{Makhorin/00/GLPK} is expressed as:
 
 \begin{verbatim}
-param NS; param NC; param K;  
+param NS; param NC; param K; 
 param M{1..NS, 1..NC}, binary; 
 param L{1..NS}, integer; 
-param W{1..NC}; 
+param W{1..NC};
 
 var s{1..NS}, binary; 
-var e{1..NC}, binary; 
-maximize z: sum { i in 1..NC } e[i]*W[i]; 
-subject to l: sum { i in 1..NS } L[i]*s[i] <= K; 
-subject to m {j in 1..NC}:  sum { i in 1..NS } M[i,j]*s[i] >= e[j];
+var e{1..NC}, binary;
+maximize z: sum { i in 1..NC } e[i]*W[i];
+subject to l: sum { i in 1..NS } L[i]*s[i] <= K;
+subject to m {j in 1..NC}: 
+    sum { i in 1..NS } M[i,j]*s[i] >= e[j];
 \end{verbatim}
 
 Using ILP produced the best results in our test runs, but we submitted
 also runs without using ILP due to time execution limitations. In such
-runs we realized duplicate passages where a big issue. We thus
-filtered using a bigram model and compute a distance between sentences
+runs we realized duplicate passages were a big issue. We thus
+filtered with MMR method \cite{Carbonell&Goldstein98}, using a bigram model and compute a distance between sentences
 as the Jaccard distance \cite{Jaccard} between their bigrams, when
 taken as a set.
 

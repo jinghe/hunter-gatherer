@@ -14,6 +14,73 @@ We submitted four runs in total:
 
 \end{description}
 
+
+We submitted three desktop runs: a baseline run using the MMR system
+described at the end of Sec.~\ref{sec:candidates} (Run~1),
+an improved run using the CRF-based candidate extractors trained on
+Wikipedia (Run~3) and an ILP-based run (Run~4).\footnote{Run~4 was not
+  using the CRF-based candidate extractors, as we wanted to see the
+  different contribution of the two approaches. Run~3 had 8\% more
+  relevant candidates.} The results are in Table~\ref{tab:eval},
+compared also to the maximum, minimum and averages for each query
+category and overall for desktop mandatory runs. The first thing we can see from the table is
+that we had our runs as the top scoring and lower scoring
+submissions. This highlights the importance of adapting DeepQA ideas
+intelligently. We can also see Run~4 was one of the better performing
+runs, even though it makes no explicit distinction between query
+types. Having its roots on Question Answering, it is also good to see
+that it performs so much better in the \textsc{QA} category (it is
+30\% better than the second best submission in that category). The
+value of the CRF-based candidate extractors can be seen in some
+improvement in the celebrity-oriented queries (the first four
+query-type columns). We are intrigued about the behavior in the
+\textsc{politician} category; we look forward studying other
+participant submissions to further elucidate the difference.
+
+
+\begin{table*}
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+RUN & \multicolumn{9}{|c|}{Category}\\
+\cline{2-10}
+ & All  & ACTOR  & ATHLE  & ARTIST  & POLIT  & FACIL  & GEO  & DEFIN  & QA \\
+\hline
+\hline
+Run~1 & 0.047& 0.040& 0.028& 0.039& 0.037& 0.060& 0.025& 0.066& 0.068 \\
+
+\cline{1-10}
+
+Run~3 & 0.050& 0.058& 0.016& 0.038& 0.086& 0.058& 0.016& 0.077& 0.053 \\
+
+\cline{1-10}
+
+Run~4 & 0.080& 0.068& 0.084& 0.074& 0.025& 0.079& 0.062& 0.076& 0.146 \\
+
+\cline{1-10}
+
+MAX & 0.080& 0.068& 0.084& 0.074& 0.086& 0.083& 0.080& 0.088& 0.146 \\
+
+\cline{1-10}
+
+MIN & 0.047& 0.040& 0.016& 0.018& 0.025& 0.005& 0.016& 0.055& 0.053 \\
+
+\cline{1-10}
+
+AVRG & 0.059& 0.053& 0.034& 0.032& 0.049& 0.070& 0.044& 0.067& 0.096 \\
+
+\cline{1-10}
+
+MEDIAN & 0.055& 0.053& 0.028& 0.027& 0.039& 0.076& 0.035& 0.066& 0.089 \\
+
+\cline{1-10}
+\end{tabular}
+\caption{Evaluation results.}
+\label{tab:eval}
+\end{table*}
+
+
+
 We sadly had no time to do an ILP-based ran for the mobile version nor
 the CRF extractors. 
 
